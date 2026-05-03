@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router';
+import { createHashRouter } from 'react-router';
 import { Layout } from './components/Layout';
 import WorkflowCanvas from './components/pages/WorkflowCanvas';
 import SimulationTest from './components/pages/SimulationTest';
@@ -8,7 +8,7 @@ import OperationsDashboard from './components/pages/OperationsDashboard';
 import TelephonySettings from './components/pages/TelephonySettings';
 import NumberManagement from './components/pages/NumberManagement';
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     path: '/',
     Component: Layout,
