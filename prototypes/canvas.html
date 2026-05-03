@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>语流 VoiceFlow Builder — 工作流画布</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--sidebar-bg:#1a1a2e;--sidebar-w:240px;--topbar-h:56px;--main-bg:#f8f9fa;--card-bg:#fff;--accent:#4f46e5;--accent-hover:#4338ca;--text-primary:#1e293b;--text-secondary:#64748b;--text-muted:#94a3b8;--border:#e2e8f0;--success:#22c55e;--warning:#f59e0b;--error:#ef4444;--radius:8px;--radius-sm:6px;--font-family:'Inter','Noto Sans SC',sans-serif}
+html,body{height:100%;font-family:var(--font-family);background:var(--main-bg);color:var(--text-primary);overflow:hidden}
+.app{display:flex;height:100vh}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sidebar-logo{padding:16px 20px;font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.sidebar-logo .dot{width:10px;height:10px;background:var(--accent);border-radius:50%}
+.sidebar-nav{padding:12px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:rgba(255,255,255,0.65);font-size:14px;cursor:pointer;transition:all .15s;text-decoration:none}
+.nav-item:hover{background:rgba(255,255,255,0.06);color:#fff}
+.nav-item.active{background:rgba(79,70,229,0.2);color:#fff;font-weight:500}
+.nav-item svg{width:18px;height:18px;stroke-width:2}
+.nav-section{padding:16px 20px 6px;font-size:11px;text-transform:uppercase;color:rgba(255,255,255,0.3);letter-spacing:.05em}
+
+/* Main area */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+
+/* Topbar */
+.topbar{height:var(--topbar-h);background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-left .breadcrumb{font-size:14px;color:var(--text-secondary)}
+.topbar-left .breadcrumb span{color:var(--text-primary);font-weight:600}
+.topbar-center{display:flex;align-items:center;gap:8px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:var(--font-family)}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-hover)}
+.btn-outline{background:transparent;color:var(--text-primary);border:1px solid var(--border)}.btn-outline:hover{background:var(--main-bg)}
+.btn-ghost{background:transparent;color:var(--text-secondary);padding:8px}.btn-ghost:hover{background:var(--main-bg);color:var(--text-primary)}
+.btn-success{background:var(--success);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px}
+.lang-toggle{font-size:12px;color:var(--text-secondary);cursor:pointer;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:transparent}
+.lang-toggle:hover{background:var(--main-bg)}
+
+/* Canvas area */
+.canvas-area{flex:1;display:flex;position:relative;overflow:hidden}
+.node-palette{width:220px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0}
+.palette-section{padding:12px 16px 6px;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text-muted);letter-spacing:.05em}
+.palette-item{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:13px;color:var(--text-primary);cursor:grab;border-radius:4px;margin:2px 8px;transition:background .1s}
+.palette-item:hover{background:var(--main-bg)}
+.palette-item.dragging{opacity:0.5;cursor:grabbing}
+.palette-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.palette-icon.trigger{background:#ede9fe;color:var(--accent)}
+.palette-icon.action{background:#dbeafe;color:#3b82f6}
+.palette-icon.logic{background:#fef3c7;color:#f59e0b}
+.palette-icon.data{background:#d1fae5;color:#22c55e}
+.palette-icon.integration{background:#fce7f3;color:#ec4899}
+.palette-icon.ai{background:#e0e7ff;color:#6366f1}
+
+/* Canvas */
+.canvas-container{flex:1;position:relative;overflow:auto;background:var(--main-bg);background-image:radial-gradient(circle,#d1d5db 1px,transparent 1px);background-size:24px 24px}
+.canvas{position:absolute;width:4000px;height:3000px;top:0;left:0}
+
+/* SVG connections */
+.svg-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.svg-layer path{fill:none;stroke:var(--text-muted);stroke-width:2;pointer-events:stroke}
+.svg-layer path.active{stroke:var(--accent);stroke-width:2.5}
+
+/* Flow nodes */
+.flow-node{position:absolute;z-index:2;background:#fff;border:2px solid var(--border);border-radius:var(--radius);min-width:160px;cursor:move;transition:box-shadow .15s,border-color .15s;user-select:none}
+.flow-node:hover{box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+.flow-node.selected{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,0.15)}
+.flow-node.executing{border-color:var(--accent);animation:pulse 1.5s infinite}
+.flow-node.error{border-color:var(--error)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(79,70,229,0.15)}50%{box-shadow:0 0 0 6px rgba(79,70,229,0.1)}}
+.flow-node-header{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:var(--radius) var(--radius) 0 0}
+.flow-node-header.trigger{background:#ede9fe;color:var(--accent)}
+.flow-node-header.action{background:#dbeafe;color:#3b82f6}
+.flow-node-header.logic{background:#fef3c7;color:#f59e0b}
+.flow-node-header.data{background:#d1fae5;color:#22c55e}
+.flow-node-header.integration{background:#fce7f3;color:#ec4899}
+.flow-node-header.ai{background:#e0e7ff;color:#6366f1}
+.flow-node-body{padding:8px 12px;font-size:12px;color:var(--text-secondary)}
+.flow-node-ports{display:flex;justify-content:space-between;padding:4px 8px 8px}
+.port{width:12px;height:12px;border-radius:50%;border:2px solid var(--border);background:#fff;cursor:crosshair;position:relative;z-index:3}
+.port.input{margin-left:-6px}
+.port.output{margin-right:-6px}
+.port:hover{border-color:var(--accent);background:rgba(79,70,229,0.1)}
+.port-label{font-size:9px;color:var(--text-muted);position:absolute;white-space:nowrap}
+
+/* Config panel */
+.config-panel{width:360px;background:#fff;border-left:1px solid var(--border);overflow-y:auto;flex-shrink:0;transform:translateX(100%);transition:transform .2s;display:none}
+.config-panel.open{display:block;transform:translateX(0)}
+.config-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.config-header h3{font-size:15px;font-weight:600}
+.config-body{padding:16px 20px}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+.form-label .required{color:var(--error)}
+.form-input,.form-select,.form-textarea{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font-family);color:var(--text-primary);background:#fff;transition:border-color .15s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,0.1)}
+.form-input.error{border-color:var(--error)}
+.form-textarea{min-height:80px;resize:vertical}
+.form-hint{font-size:11px;color:var(--text-muted);margin-top:4px}
+.form-error{font-size:11px;color:var(--error);margin-top:4px}
+
+/* Simulation panel */
+.sim-panel{position:absolute;bottom:0;left:220px;right:0;height:300px;background:#fff;border-top:1px solid var(--border);z-index:10;display:none;flex-direction:column}
+.sim-panel.open{display:flex}
+.sim-header{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sim-header h3{font-size:14px;font-weight:600}
+.sim-messages{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.sim-msg{max-width:70%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5}
+.sim-msg.system{background:#f1f5f9;align-self:flex-start;border-bottom-left-radius:4px}
+.sim-msg.user{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.sim-msg .node-tag{font-size:10px;color:var(--text-muted);margin-top:4px}
+.sim-msg.system .node-tag{color:var(--text-muted)}
+.sim-input-area{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px}
+.sim-input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font-family)}
+.sim-input:focus{outline:none;border-color:var(--accent)}
+
+/* Validation toast */
+.toast{position:fixed;top:70px;right:20px;padding:12px 20px;border-radius:var(--radius);font-size:13px;z-index:100;animation:slideIn .2s;display:none}
+.toast.error{background:#fef2f2;color:var(--error);border:1px solid #fecaca}
+.toast.warning{background:#fffbeb;color:var(--warning);border:1px solid #fde68a}
+.toast.success{background:#f0fdf4;color:var(--success);border:1px solid #bbf7d0}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* Zoom controls */
+.zoom-controls{position:absolute;bottom:16px;right:16px;display:flex;flex-direction:column;gap:4px;z-index:5}
+.zoom-btn{width:36px;height:36px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text-secondary)}
+.zoom-btn:hover{background:var(--main-bg);color:var(--text-primary)}
+.zoom-label{font-size:11px;text-align:center;color:var(--text-muted);padding:2px}
+
+/* Empty state */
+.empty-state{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text-muted);z-index:0}
+.empty-state svg{width:64px;height:64px;stroke:var(--border);margin-bottom:16px}
+.empty-state h3{font-size:16px;font-weight:600;color:var(--text-secondary);margin-bottom:8px}
+.empty-state p{font-size:13px;max-width:300px;line-height:1.6}
+
+/* Connection line being drawn */
+.temp-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:6 4;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo"><span class="dot"></span><span data-i18n="appName">语流</span></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section" data-i18n="navWorkspace">工作区</div>
+      <a class="nav-item active" href="canvas.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg><span data-i18n="navCanvas">工作流画布</span></a>
+      <a class="nav-item" href="version.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span data-i18n="navVersion">版本管理</span></a>
+      <a class="nav-item" href="runtime.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg><span data-i18n="navRuntime">运行时管理</span></a>
+      <div class="nav-section" data-i18n="navAnalytics">数据分析</div>
+      <a class="nav-item" href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span data-i18n="navDashboard">运营看板</span></a>
+      <div class="nav-section" data-i18n="navSettings">设置</div>
+      <a class="nav-item" href="telephony.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg><span data-i18n="navTelephony">通信接入</span></a>
+      <a class="nav-item" href="numbers.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg><span data-i18n="navNumbers">号码管理</span></a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="breadcrumb"><span data-i18n="breadRec">客服接待员</span> / <span data-i18n="breadFlow">主流程</span></div>
+      </div>
+      <div class="topbar-center">
+        <button class="btn btn-outline btn-sm" id="btnSimulate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg><span data-i18n="btnTextSim">文字模拟</span></button>
+        <button class="btn btn-outline btn-sm" id="btnRealTest"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg><span data-i18n="btnRealSim">真实通话模拟</span></button>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-outline btn-sm" id="btnSave"><span data-i18n="btnSave">保存</span></button>
+        <button class="btn btn-primary btn-sm" id="btnPublish"><span data-i18n="btnPublish">发布</span></button>
+        <button class="lang-toggle" id="langToggle">EN</button>
+      </div>
+    </header>
+
+    <!-- Canvas Area -->
+    <div class="canvas-area">
+      <!-- Node Palette -->
+      <div class="node-palette" id="nodePalette">
+        <div class="palette-section" data-i18n="palTrigger">触发器</div>
+        <div class="palette-item" draggable="true" data-type="trigger" data-subtype="incoming_call"><div class="palette-icon trigger">📞</div><span data-i18n="nodeIncoming">来电触发器</span></div>
+        <div class="palette-section" data-i18n="palAction">动作</div>
+        <div class="palette-item" draggable="true" data-type="action" data-subtype="greeting"><div class="palette-icon action">💬</div><span data-i18n="nodeGreeting">问候/开场白</span></div>
+        <div class="palette-item" draggable="true" data-type="action" data-subtype="ask_question"><div class="palette-icon action">❓</div><span data-i18n="nodeAsk">提问</span></div>
+        <div class="palette-item" draggable="true" data-type="action" data-subtype="collect_info"><div class="palette-icon action">📝</div><span data-i18n="nodeCollect">收集来电信息</span></div>
+        <div class="palette-item" draggable="true" data-type="action" data-subtype="transfer_call"><div class="palette-icon action">🔄</div><span data-i18n="nodeTransfer">转接呼叫</span></div>
+        <div class="palette-item" draggable="true" data-type="action" data-subtype="send_sms"><div class="palette-icon action">📱</div><span data-i18n="nodeSMS">发送短信</span></div>
+        <div class="palette-item" draggable="true" data-type="action" data-subtype="end_call"><div class="palette-icon action">📕</div><span data-i18n="nodeEnd">通话结束</span></div>
+        <div class="palette-section" data-i18n="palLogic">逻辑</div>
+        <div class="palette-item" draggable="true" data-type="logic" data-subtype="conditional_branch"><div class="palette-icon logic">🔀</div><span data-i18n="nodeBranch">条件分支</span></div>
+        <div class="palette-item" draggable="true" data-type="logic" data-subtype="if_else"><div class="palette-icon logic">⚖️</div><span data-i18n="nodeIfElse">If/Else</span></div>
+        <div class="palette-item" draggable="true" data-type="logic" data-subtype="business_hours"><div class="palette-icon logic">🕐</div><span data-i18n="nodeHours">营业时间判断</span></div>
+        <div class="palette-item" draggable="true" data-type="logic" data-subtype="call_type"><div class="palette-icon logic">🔍</div><span data-i18n="nodeCallType">来电类型检测</span></div>
+        <div class="palette-section" data-i18n="palData">数据</div>
+        <div class="palette-item" draggable="true" data-type="data" data-subtype="log_info"><div class="palette-icon data">📋</div><span data-i18n="nodeLog">记录信息</span></div>
+        <div class="palette-section" data-i18n="palIntegration">集成</div>
+        <div class="palette-item" draggable="true" data-type="integration" data-subtype="crm_lookup"><div class="palette-icon integration">🔗</div><span data-i18n="nodeCRM">CRM查询</span></div>
+        <div class="palette-item" draggable="true" data-type="integration" data-subtype="calendar_booking"><div class="palette-icon integration">📅</div><span data-i18n="nodeCalendar">日历预订</span></div>
+        <div class="palette-item" draggable="true" data-type="integration" data-subtype="send_notification"><div class="palette-icon integration">🔔</div><span data-i18n="nodeNotify">发送通知</span></div>
+        <div class="palette-item" draggable="true" data-type="integration" data-subtype="webhook"><div class="palette-icon integration">🪝</div><span data-i18n="nodeWebhook">Webhook</span></div>
+        <div class="palette-section" data-i18n="palAI">AI增强</div>
+        <div class="palette-item" draggable="true" data-type="ai" data-subtype="intent_detection"><div class="palette-icon ai">🧠</div><span data-i18n="nodeIntent">AI意图检测</span></div>
+        <div class="palette-item" draggable="true" data-type="ai" data-subtype="knowledge_qa"><div class="palette-icon ai">📚</div><span data-i18n="nodeKB">知识库问答</span></div>
+        <div class="palette-item" draggable="true" data-type="ai" data-subtype="call_summary"><div class="palette-icon ai">📄</div><span data-i18n="nodeSummary">通话摘要生成</span></div>
+      </div>
+
+      <!-- Canvas -->
+      <div class="canvas-container" id="canvasContainer">
+        <div class="canvas" id="canvas">
+          <svg class="svg-layer" id="svgLayer"></svg>
+          <!-- Empty state -->
+          <div class="empty-state" id="emptyState">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4v16m8-8H4"/></svg>
+            <h3 data-i18n="emptyTitle">从左侧拖拽节点开始构建</h3>
+            <p data-i18n="emptyDesc">拖拽节点到画布，连线表达数据流，双击节点配置参数</p>
+          </div>
+        </div>
+        <div class="zoom-controls">
+          <button class="zoom-btn" id="zoomIn">+</button>
+          <div class="zoom-label" id="zoomLabel">100%</div>
+          <button class="zoom-btn" id="zoomOut">−</button>
+          <button class="zoom-btn" id="zoomFit" title="Fit">⊡</button>
+        </div>
+      </div>
+
+      <!-- Config Panel -->
+      <div class="config-panel" id="configPanel">
+        <div class="config-header">
+          <h3 id="configTitle" data-i18n="configTitle">节点配置</h3>
+          <button class="btn-ghost" id="configClose">✕</button>
+        </div>
+        <div class="config-body" id="configBody"></div>
+      </div>
+
+      <!-- Simulation Panel -->
+      <div class="sim-panel" id="simPanel">
+        <div class="sim-header">
+          <h3 data-i18n="simTitle">文字模拟测试</h3>
+          <button class="btn-ghost" id="simClose">✕</button>
+        </div>
+        <div class="sim-messages" id="simMessages"></div>
+        <div class="sim-input-area">
+          <input class="sim-input" id="simInput" data-i18n-placeholder="simPlaceholder" placeholder="输入您的回答..." />
+          <button class="btn btn-primary btn-sm" id="simSend" data-i18n="simSend">发送</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ i18n ============
+const i18n = {
+  zh: {
+    appName:'语流',navWorkspace:'工作区',navCanvas:'工作流画布',navVersion:'版本管理',navRuntime:'运行时管理',navAnalytics:'数据分析',navDashboard:'运营看板',navSettings:'设置',navTelephony:'通信接入',navNumbers:'号码管理',
+    breadRec:'客服接待员',breadFlow:'主流程',btnTextSim:'文字模拟',btnRealSim:'真实通话模拟',btnSave:'保存',btnPublish:'发布',
+    palTrigger:'触发器',palAction:'动作',palLogic:'逻辑',palData:'数据',palIntegration:'集成',palAI:'AI增强',
+    nodeIncoming:'来电触发器',nodeGreeting:'问候/开场白',nodeAsk:'提问',nodeCollect:'收集来电信息',nodeTransfer:'转接呼叫',nodeSMS:'发送短信',nodeEnd:'通话结束',
+    nodeBranch:'条件分支',nodeIfElse:'If/Else',nodeHours:'营业时间判断',nodeCallType:'来电类型检测',nodeLog:'记录信息',
+    nodeCRM:'CRM查询',nodeCalendar:'日历预订',nodeNotify:'发送通知',nodeWebhook:'Webhook',
+    nodeIntent:'AI意图检测',nodeKB:'知识库问答',nodeSummary:'通话摘要生成',
+    emptyTitle:'从左侧拖拽节点开始构建',emptyDesc:'拖拽节点到画布，连线表达数据流，双击节点配置参数',
+    configTitle:'节点配置',simTitle:'文字模拟测试',simPlaceholder:'输入您的回答...',simSend:'发送',
+    saved:'保存成功',published:'发布成功',validErr:'流程校验失败',
+  },
+  en: {
+    appName:'VoiceFlow',navWorkspace:'Workspace',navCanvas:'Workflow Canvas',navVersion:'Version Mgmt',navRuntime:'Runtime Mgmt',navAnalytics:'Analytics',navDashboard:'Dashboard',navSettings:'Settings',navTelephony:'Telephony',navNumbers:'Numbers',
+    breadRec:'Support Agent',breadFlow:'Main Flow',btnTextSim:'Text Sim',btnRealSim:'Live Test',btnSave:'Save',btnPublish:'Publish',
+    palTrigger:'Triggers',palAction:'Actions',palLogic:'Logic',palData:'Data',palIntegration:'Integrations',palAI:'AI Enhanced',
+    nodeIncoming:'Incoming Call',nodeGreeting:'Greeting',nodeAsk:'Ask Question',nodeCollect:'Collect Info',nodeTransfer:'Transfer Call',nodeSMS:'Send SMS',nodeEnd:'End Call',
+    nodeBranch:'Conditional',nodeIfElse:'If/Else',nodeHours:'Business Hours',nodeCallType:'Call Type',nodeLog:'Log Info',
+    nodeCRM:'CRM Lookup',nodeCalendar:'Calendar Booking',nodeNotify:'Send Notification',nodeWebhook:'Webhook',
+    nodeIntent:'AI Intent',nodeKB:'Knowledge Q&A',nodeSummary:'Call Summary',
+    emptyTitle:'Drag nodes from the left to start',emptyDesc:'Drag nodes to canvas, connect them for data flow, double-click to configure',
+    configTitle:'Node Config',simTitle:'Text Simulation',simPlaceholder:'Type your answer...',simSend:'Send',
+    saved:'Saved successfully',published:'Published successfully',validErr:'Validation failed',
+  }
+};
+let lang='zh';
+function t(k){return i18n[lang][k]||k}
+function applyLang(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(i18n[lang][k])el.textContent=i18n[lang][k]});
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const k=el.getAttribute('data-i18n-placeholder');if(i18n[lang][k])el.placeholder=i18n[lang][k]});
+}
+document.getElementById('langToggle').onclick=function(){lang=lang==='zh'?'en':'zh';this.textContent=lang==='zh'?'EN':'中文';applyLang()};
+
+// ============ Node Config Templates ============
+const nodeConfigs = {
+  incoming_call:{label:'来电触发器',fields:[{key:'phone_number',type:'select',label:'适用号码',required:false,options:['所有号码','+861012345678']},{key:'mute_answer',type:'select',label:'静音接听',options:['否','是']}]},
+  greeting:{label:'问候/开场白',fields:[{key:'greeting_text',type:'textarea',label:'问候语文本',required:true,placeholder:'您好，欢迎致电{{company_name}}'},{key:'voice',type:'select',label:'语音选择',options:['女声-温柔','男声-专业','女声-活泼']},{key:'speed',type:'select',label:'语速',options:['0.8x','1.0x','1.2x']}]},
+  ask_question:{label:'提问',fields:[{key:'question_text',type:'textarea',label:'问题文本',required:true,placeholder:'请问您是要咨询、预约还是投诉？'},{key:'input_method',type:'select',label:'输入方式',options:['语音','按键','两者']},{key:'max_wait',type:'select',label:'最大等待时间',options:['5秒','10秒','15秒']},{key:'retries',type:'select',label:'重试次数',options:['1次','2次','3次']},{key:'timeout_msg',type:'textarea',label:'超时话术',placeholder:'抱歉，未听清您的回答，请再说一次'}]},
+  collect_info:{label:'收集来电信息',fields:[{key:'fields',type:'textarea',label:'收集字段（每行一个：字段名:标签:是否必填）',placeholder:'name:姓名:必填\nphone:电话:必填\nreason:事由:选填'},{key:'confirm_msg',type:'textarea',label:'确认话术',placeholder:'我确认一下，您是{{name}}，电话{{phone}}，对吗？'}]},
+  transfer_call:{label:'转接呼叫',fields:[{key:'transfer_type',type:'select',label:'转接方式',options:['暖转接','冷转接']},{key:'target',type:'input',label:'目标号码/坐席',required:true,placeholder:'+861012345678'},{key:'wait_msg',type:'textarea',label:'转接前话术',placeholder:'正在为您转接，请稍候...'},{key:'max_wait',type:'select',label:'最大等待时间',options:['15秒','30秒','60秒']},{key:'fail_action',type:'select',label:'失败路径',options:['留言','挂断','转下一个号码']}]},
+  send_sms:{label:'发送短信',fields:[{key:'recipient',type:'select',label:'收件人',options:['来电号码','固定号码']},{key:'template',type:'textarea',label:'短信模板',placeholder:'感谢您的来电，预约已确认：{{appointment_date}}'}]},
+  end_call:{label:'通话结束',fields:[{key:'end_msg',type:'textarea',label:'结束语文本',placeholder:'感谢您的来电，再见！'},{key:'send_sms',type:'select',label:'通话后短信',options:['否','是']}]},
+  conditional_branch:{label:'条件分支',fields:[{key:'variable',type:'select',label:'判断变量',options:['intent','caller_type','custom']},{key:'conditions',type:'textarea',label:'条件列表（每行：值=分支名）',placeholder:'咨询=咨询分支\n预约=预约分支\n投诉=投诉分支'},{key:'default',type:'input',label:'默认分支',placeholder:'其他'}]},
+  if_else:{label:'If/Else',fields:[{key:'condition',type:'input',label:'条件表达式',required:true,placeholder:'caller_type == "vip"'},{key:'true_branch',type:'input',label:'True分支目标'},{key:'false_branch',type:'input',label:'False分支目标'}]},
+  business_hours:{label:'营业时间判断',fields:[{key:'schedule',type:'textarea',label:'营业时间（每行：星期 开始-结束）',placeholder:'周一至五 09:00-18:00\n周六 10:00-14:00'},{key:'timezone',type:'select',label:'时区',options:['Asia/Shanghai','America/New_York','Europe/London']}]},
+  call_type:{label:'来电类型检测',fields:[{key:'data_source',type:'select',label:'客户数据源',options:['无','内置CRM','HubSpot','Salesforce']},{key:'blacklist_action',type:'select',label:'黑名单行为',options:['直接挂断','播放提示后挂断','转特殊坐席']}]},
+  log_info:{label:'记录信息',fields:[{key:'fields',type:'textarea',label:'记录字段映射（每行：流程变量→记录字段）',placeholder:'caller_name→customer_name\nreason→contact_reason'},{key:'record_type',type:'select',label:'记录类型',options:['通话日志','客户信息','预约信息']}]},
+  crm_lookup:{label:'CRM查询',fields:[{key:'crm_type',type:'select',label:'CRM类型',options:['HubSpot','Salesforce','自定义API']},{key:'query_field',type:'select',label:'查询字段',options:['来电号码','姓名','ID']},{key:'timeout',type:'select',label:'超时时间',options:['3秒','5秒','10秒']},{key:'fail_action',type:'select',label:'超时/失败行为',options:['继续(无数据)','转人工']}]},
+  calendar_booking:{label:'日历预订',fields:[{key:'calendar_type',type:'select',label:'日历类型',options:['Google Calendar','Cal.com','自定义']},{key:'duration',type:'select',label:'预订时长',options:['15分钟','30分钟','60分钟']},{key:'conflict_action',type:'select',label:'冲突时行为',options:['推荐最近时段','走失败分支']}]},
+  send_notification:{label:'发送通知',fields:[{key:'channel',type:'select',label:'通知渠道',options:['Slack','Email','企业微信','钉钉','Webhook']},{key:'template',type:'textarea',label:'通知模板',placeholder:'新来电：{{caller_number}}，意图：{{intent}}'}]},
+  webhook:{label:'Webhook',fields:[{key:'url',type:'input',label:'URL',required:true,placeholder:'https://api.example.com/webhook'},{key:'method',type:'select',label:'HTTP方法',options:['POST','GET','PUT','PATCH']},{key:'timeout',type:'select',label:'超时时间',options:['5秒','10秒','30秒']},{key:'retries',type:'select',label:'重试次数',options:['0次','1次','2次']}]},
+  intent_detection:{label:'AI意图检测',fields:[{key:'intents',type:'textarea',label:'意图列表（每行：意图名:描述:示例）',required:true,placeholder:'咨询:一般咨询:我想了解一下\n预约:预约服务:我想预约\n投诉:投诉建议:我要投诉'},{key:'threshold',type:'select',label:'置信度阈值',options:['0.5','0.7','0.9']},{key:'fallback',type:'select',label:'降级方案',options:['按键菜单','重新提问','转人工']}]},
+  knowledge_qa:{label:'知识库问答',fields:[{key:'kb_id',type:'select',label:'知识库',options:['FAQ知识库','产品手册','政策文档']},{key:'style',type:'select',label:'回答风格',options:['简洁','详细','口语化']},{key:'uncertain_action',type:'select',label:'不确定时行为',options:['告知无法回答+转人工','尝试回答+标注不确定']}]},
+  call_summary:{label:'通话摘要生成',fields:[{key:'format',type:'select',label:'摘要格式',options:['简洁','详细']},{key:'include_todos',type:'select',label:'提取待办事项',options:['是','否']},{key:'include_sentiment',type:'select',label:'包含情绪评估',options:['是','否']},{key:'recipients',type:'select',label:'摘要接收人',options:['邮件','Slack','CRM备注']}]}
+};
+
+// ============ Canvas State ============
+let nodes = [];
+let connections = [];
+let nextId = 1;
+let selectedNode = null;
+let draggingNode = null;
+let dragOffset = {x:0,y:0};
+let connecting = null; // {fromNodeId, fromPort, tempLine}
+let zoom = 1;
+
+// ============ Toast ============
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  t.style.display = 'block';
+  setTimeout(()=>{ t.style.display='none'; }, 3000);
+}
+
+// ============ Drag from Palette ============
+document.querySelectorAll('.palette-item').forEach(item => {
+  item.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('type', item.dataset.type);
+    e.dataTransfer.setData('subtype', item.dataset.subtype);
+    item.classList.add('dragging');
+  });
+  item.addEventListener('dragend', () => item.classList.remove('dragging'));
+});
+
+const canvasContainer = document.getElementById('canvasContainer');
+canvasContainer.addEventListener('dragover', e => e.preventDefault());
+canvasContainer.addEventListener('drop', e => {
+  e.preventDefault();
+  const type = e.dataTransfer.getData('type');
+  const subtype = e.dataTransfer.getData('subtype');
+  if (!type || !subtype) return;
+  // Check trigger uniqueness
+  if (type === 'trigger' && nodes.some(n => n.type === 'trigger')) {
+    showToast(lang==='zh'?'流程已有触发器，不可重复添加':'Flow already has a trigger', 'error');
+    return;
+  }
+  const rect = canvasContainer.getBoundingClientRect();
+  const x = (e.clientX - rect.left + canvasContainer.scrollLeft) / zoom;
+  const y = (e.clientY - rect.top + canvasContainer.scrollTop) / zoom;
+  addNode(type, subtype, x, y);
+});
+
+function addNode(type, subtype, x, y) {
+  const id = 'n' + (nextId++);
+  const cfg = nodeConfigs[subtype];
+  const label = cfg ? cfg.label : subtype;
+  const node = { id, type, subtype, label, x, y, config: {} };
+  nodes.push(node);
+  renderNode(node);
+  document.getElementById('emptyState').style.display = 'none';
+  return node;
+}
+
+function renderNode(node) {
+  const el = document.createElement('div');
+  el.className = 'flow-node';
+  el.id = 'node-' + node.id;
+  el.style.left = node.x + 'px';
+  el.style.top = node.y + 'px';
+  el.dataset.nodeId = node.id;
+
+  const hasInput = node.type !== 'trigger';
+  const hasOutput = node.subtype !== 'end_call';
+  const portLabels = getPortLabels(node);
+
+  el.innerHTML = `
+    <div class="flow-node-header ${node.type}">${node.label}</div>
+    <div class="flow-node-body">${getNodeDesc(node)}</div>
+    <div class="flow-node-ports">
+      ${hasInput ? '<div class="port input" data-port="input" data-node-id="'+node.id+'"></div>' : '<div></div>'}
+      ${hasOutput ? portLabels.map((p,i) => '<div class="port output" data-port="'+p.id+'" data-node-id="'+node.id+'" style="margin-right:4px" title="'+p.label+'"></div>').join('') : '<div></div>'}
+    </div>
+  `;
+  document.getElementById('canvas').appendChild(el);
+
+  // Node dragging
+  el.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('port')) return;
+    draggingNode = node;
+    dragOffset.x = e.clientX - node.x * zoom;
+    dragOffset.y = e.clientY - node.y * zoom;
+    selectNode(node);
+    e.stopPropagation();
+  });
+
+  // Double click to configure
+  el.addEventListener('dblclick', e => {
+    if (e.target.classList.contains('port')) return;
+    openConfig(node);
+  });
+
+  // Port connection
+  el.querySelectorAll('.port.output').forEach(port => {
+    port.addEventListener('mousedown', e => {
+      e.stopPropagation();
+      connecting = { fromNodeId: node.id, fromPort: port.dataset.port };
+    });
+  });
+}
+
+function getPortLabels(node) {
+  if (node.subtype === 'conditional_branch' || node.subtype === 'if_else') {
+    return [{id:'branch_true',label:'True'},{id:'branch_false',label:'False'}];
+  }
+  if (node.subtype === 'business_hours') {
+    return [{id:'branch_open',label:'营业中'},{id:'branch_closed',label:'非营业'}];
+  }
+  if (node.subtype === 'call_type') {
+    return [{id:'branch_existing',label:'老客户'},{id:'branch_new',label:'新客户'},{id:'branch_blocked',label:'黑名单'}];
+  }
+  return [{id:'default',label:''}];
+}
+
+function getNodeDesc(node) {
+  const cfg = nodeConfigs[node.subtype];
+  if (!cfg) return '';
+  const firstField = cfg.fields[0];
+  if (firstField && node.config[firstField.key]) {
+    const val = node.config[firstField.key];
+    return val.length > 30 ? val.substring(0,30)+'...' : val;
+  }
+  return firstField ? firstField.placeholder || '' : '';
+}
+
+// ============ Mouse events for dragging & connecting ============
+document.addEventListener('mousemove', e => {
+  if (draggingNode) {
+    const x = (e.clientX - dragOffset.x) / zoom;
+    const y = (e.clientY - dragOffset.y) / zoom;
+    draggingNode.x = Math.max(0, x);
+    draggingNode.y = Math.max(0, y);
+    const el = document.getElementById('node-' + draggingNode.id);
+    if (el) { el.style.left = draggingNode.x + 'px'; el.style.top = draggingNode.y + 'px'; }
+    renderConnections();
+  }
+  if (connecting) {
+    renderConnections(connecting);
+  }
+});
+
+document.addEventListener('mouseup', e => {
+  if (connecting) {
+    // Check if dropped on an input port
+    const target = e.target.closest('.port.input');
+    if (target) {
+      const toNodeId = target.dataset.nodeId;
+      const toPort = target.dataset.port;
+      if (toNodeId !== connecting.fromNodeId) {
+        // Check for duplicate
+        const exists = connections.some(c => c.from === connecting.fromNodeId && c.to === toNodeId);
+        if (!exists) {
+          connections.push({ from: connecting.fromNodeId, fromPort: connecting.fromPort, to: toNodeId, toPort });
+          renderConnections();
+        }
+      }
+    }
+    connecting = null;
+    renderConnections();
+  }
+  draggingNode = null;
+});
+
+// ============ Select node ============
+function selectNode(node) {
+  document.querySelectorAll('.flow-node.selected').forEach(el => el.classList.remove('selected'));
+  selectedNode = node;
+  const el = document.getElementById('node-' + node.id);
+  if (el) el.classList.add('selected');
+}
+
+document.getElementById('canvasContainer').addEventListener('mousedown', e => {
+  if (e.target.id === 'canvasContainer' || e.target.id === 'canvas' || e.target.closest('.canvas') === document.getElementById('canvas') && !e.target.closest('.flow-node')) {
+    selectedNode = null;
+    document.querySelectorAll('.flow-node.selected').forEach(el => el.classList.remove('selected'));
+  }
+});
+
+// ============ Render Connections (SVG) ============
+function renderConnections(tempConn) {
+  const svg = document.getElementById('svgLayer');
+  svg.innerHTML = '';
+  const allConns = [...connections];
+  // Temp line
+  if (tempConn) {
+    const fromEl = document.getElementById('node-' + tempConn.fromNodeId);
+    const fromPort = fromEl?.querySelector(`.port.output[data-port="${tempConn.fromPort}"]`);
+    if (fromPort) {
+      const rect = fromPort.getBoundingClientRect();
+      const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+      // We just draw a stub — real implementation would follow mouse
+    }
+  }
+  allConns.forEach(conn => {
+    const fromEl = document.getElementById('node-' + conn.from);
+    const toEl = document.getElementById('node-' + conn.to);
+    if (!fromEl || !toEl) return;
+    const fromPorts = fromEl.querySelectorAll('.port.output');
+    const toPort = toEl.querySelector('.port.input');
+    if (!toPort) return;
+    // Find the right output port
+    let fromPortEl = null;
+    fromPorts.forEach(p => { if (p.dataset.port === conn.fromPort) fromPortEl = p; });
+    if (!fromPortEl) return;
+
+    const fromRect = fromPortEl.getBoundingClientRect();
+    const toRect = toPort.getBoundingClientRect();
+    const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+
+    const x1 = (fromRect.left + fromRect.width/2 - canvasRect.left) / zoom;
+    const y1 = (fromRect.top + fromRect.height/2 - canvasRect.top) / zoom;
+    const x2 = (toRect.left + toRect.width/2 - canvasRect.left) / zoom;
+    const y2 = (toRect.top + toRect.height/2 - canvasRect.top) / zoom;
+
+    const dx = Math.abs(x2 - x1) * 0.5;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', `M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}`);
+    path.setAttribute('stroke', '#94a3b8');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('fill', 'none');
+    svg.appendChild(path);
+  });
+}
+
+// ============ Config Panel ============
+function openConfig(node) {
+  const panel = document.getElementById('configPanel');
+  const body = document.getElementById('configBody');
+  const title = document.getElementById('configTitle');
+  const cfg = nodeConfigs[node.subtype];
+  if (!cfg) return;
+  title.textContent = cfg.label;
+  body.innerHTML = '';
+  cfg.fields.forEach(f => {
+    const val = node.config[f.key] || '';
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    let inputHtml = '';
+    if (f.type === 'textarea') {
+      inputHtml = `<textarea class="form-textarea" data-field="${f.key}" placeholder="${f.placeholder||''}">${val}</textarea>`;
+    } else if (f.type === 'select') {
+      inputHtml = `<select class="form-select" data-field="${f.key}">${f.options.map(o => `<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
+    } else {
+      inputHtml = `<input class="form-input" data-field="${f.key}" value="${val}" placeholder="${f.placeholder||''}" />`;
+    }
+    group.innerHTML = `<label class="form-label">${f.label}${f.required?' <span class="required">*</span>':''}</label>${inputHtml}`;
+    body.appendChild(group);
+  });
+  // Save button
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn btn-primary';
+  saveBtn.textContent = lang==='zh'?'保存配置':'Save Config';
+  saveBtn.style.width = '100%';
+  saveBtn.onclick = () => {
+    body.querySelectorAll('[data-field]').forEach(el => {
+      node.config[el.dataset.field] = el.value;
+    });
+    // Update node body
+    const nodeEl = document.getElementById('node-' + node.id);
+    if (nodeEl) {
+      const bodyEl = nodeEl.querySelector('.flow-node-body');
+      if (bodyEl) bodyEl.textContent = getNodeDesc(node);
+    }
+    showToast(lang==='zh'?'配置已保存':'Config saved', 'success');
+  };
+  body.appendChild(saveBtn);
+  panel.classList.add('open');
+}
+
+document.getElementById('configClose').onclick = () => {
+  document.getElementById('configPanel').classList.remove('open');
+};
+
+// ============ Zoom ============
+document.getElementById('zoomIn').onclick = () => { zoom = Math.min(2, zoom + 0.1); applyZoom(); };
+document.getElementById('zoomOut').onclick = () => { zoom = Math.max(0.25, zoom - 0.1); applyZoom(); };
+document.getElementById('zoomFit').onclick = () => { zoom = 1; applyZoom(); };
+function applyZoom() {
+  document.getElementById('canvas').style.transform = `scale(${zoom})`;
+  document.getElementById('canvas').style.transformOrigin = '0 0';
+  document.getElementById('zoomLabel').textContent = Math.round(zoom*100)+'%';
+  renderConnections();
+}
+
+// ============ Save / Publish ============
+document.getElementById('btnSave').onclick = () => {
+  // Validate
+  const errors = validateFlow();
+  if (errors.length > 0) {
+    showToast(errors[0], 'error');
+    return;
+  }
+  showToast(t('saved'), 'success');
+};
+
+document.getElementById('btnPublish').onclick = () => {
+  const errors = validateFlow();
+  if (errors.length > 0) {
+    showToast(errors[0], 'error');
+    return;
+  }
+  showToast(t('published'), 'success');
+};
+
+function validateFlow() {
+  const errors = [];
+  if (nodes.length === 0) { errors.push(lang==='zh'?'流程为空，请添加节点':'Flow is empty'); return errors; }
+  if (!nodes.some(n => n.type === 'trigger')) { errors.push(lang==='zh'?'缺少来电触发器':'Missing trigger node'); }
+  if (!nodes.some(n => n.subtype === 'end_call')) { errors.push(lang==='zh'?'缺少通话结束节点':'Missing end call node'); }
+  // Check disconnected nodes
+  nodes.forEach(n => {
+    if (n.type === 'trigger') return;
+    const hasInput = connections.some(c => c.to === n.id);
+    if (!hasInput) errors.push(lang==='zh'?`节点"${n.label}"未连接`:`Node "${n.label}" is disconnected`);
+  });
+  return errors;
+}
+
+// ============ Simulation ============
+let simActive = false;
+let simCurrentNode = null;
+const simFlow = []; // ordered list of nodes based on connections
+
+document.getElementById('btnSimulate').onclick = () => {
+  const panel = document.getElementById('simPanel');
+  panel.classList.toggle('open');
+  simActive = panel.classList.contains('open');
+  if (simActive) startSimulation();
+};
+document.getElementById('simClose').onclick = () => {
+  document.getElementById('simPanel').classList.remove('open');
+  simActive = false;
+  document.querySelectorAll('.flow-node.executing').forEach(el => el.classList.remove('executing'));
+};
+
+function startSimulation() {
+  const msgs = document.getElementById('simMessages');
+  msgs.innerHTML = '';
+  const trigger = nodes.find(n => n.type === 'trigger');
+  if (!trigger) {
+    addSimMsg(lang==='zh'?'缺少触发器节点，无法模拟':'Missing trigger node', 'system');
+    return;
+  }
+  simCurrentNode = trigger;
+  highlightNode(trigger.id);
+  addSimMsg(lang==='zh'?'📞 来电触发 — 流程开始':'📞 Call triggered — flow started', 'system');
+  // Move to next node
+  advanceSim();
+}
+
+function advanceSim() {
+  const nextConn = connections.find(c => c.from === simCurrentNode.id);
+  if (!nextConn) return;
+  const nextNode = nodes.find(n => n.id === nextConn.to);
+  if (!nextNode) return;
+  simCurrentNode = nextNode;
+  highlightNode(nextNode.id);
+
+  if (nextNode.type === 'action' || nextNode.type === 'data') {
+    const text = getNodeSimOutput(nextNode);
+    addSimMsg(text, 'system', nextNode.label);
+    if (nextNode.subtype === 'end_call') {
+      addSimMsg(lang==='zh'?'📕 通话结束':'📕 Call ended', 'system');
+      return;
+    }
+    if (nextNode.subtype === 'ask_question' || nextNode.subtype === 'collect_info') {
+      // Wait for user input
+    } else {
+      setTimeout(advanceSim, 800);
+    }
+  } else if (nextNode.type === 'logic') {
+    addSimMsg(`🔀 ${nextNode.label} — ${lang==='zh'?'请选择分支':'Choose branch'}`, 'system', nextNode.label);
+  } else if (nextNode.type === 'ai') {
+    addSimMsg(`🧠 ${nextNode.label} — ${lang==='zh'?'AI正在处理...':'AI processing...'}`, 'system', nextNode.label);
+    setTimeout(advanceSim, 1200);
+  } else if (nextNode.type === 'integration') {
+    addSimMsg(`🔗 ${nextNode.label} — ${lang==='zh'?'调用外部服务...':'Calling external service...'}`, 'system', nextNode.label);
+    setTimeout(advanceSim, 1000);
+  }
+}
+
+function getNodeSimOutput(node) {
+  const text = node.config.greeting_text || node.config.question_text || node.config.end_msg || node.config.template || '';
+  if (text) return text.replace(/\{\{.*?\}\}/g, 'XX');
+  const cfg = nodeConfigs[node.subtype];
+  if (cfg && cfg.fields[0]) return cfg.fields[0].placeholder || node.label;
+  return node.label;
+}
+
+function addSimMsg(text, type, nodeTag) {
+  const msgs = document.getElementById('simMessages');
+  const div = document.createElement('div');
+  div.className = 'sim-msg ' + type;
+  div.textContent = text;
+  if (nodeTag) {
+    const tag = document.createElement('div');
+    tag.className = 'node-tag';
+    tag.textContent = '▸ ' + nodeTag;
+    div.appendChild(tag);
+  }
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function highlightNode(nodeId) {
+  document.querySelectorAll('.flow-node.executing').forEach(el => el.classList.remove('executing'));
+  const el = document.getElementById('node-' + nodeId);
+  if (el) el.classList.add('executing');
+}
+
+// User input in simulation
+document.getElementById('simSend').onclick = sendSimInput;
+document.getElementById('simInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendSimInput(); });
+
+function sendSimInput() {
+  const input = document.getElementById('simInput');
+  const text = input.value.trim();
+  if (!text) return;
+  addSimMsg(text, 'user');
+  input.value = '';
+
+  // Simple logic: try to advance
+  if (simCurrentNode && simCurrentNode.type === 'logic') {
+    // For logic nodes, check if input matches a branch
+    const outConns = connections.filter(c => c.from === simCurrentNode.id);
+    if (outConns.length > 0) {
+      const chosenConn = outConns[0]; // Simple: take first branch
+      simCurrentNode = nodes.find(n => n.id === chosenConn.to);
+      highlightNode(simCurrentNode.id);
+      const text2 = getNodeSimOutput(simCurrentNode);
+      addSimMsg(text2, 'system', simCurrentNode.label);
+      if (simCurrentNode.subtype !== 'end_call' && simCurrentNode.subtype !== 'ask_question' && simCurrentNode.subtype !== 'collect_info') {
+        setTimeout(advanceSim, 800);
+      }
+    }
+  } else {
+    setTimeout(advanceSim, 600);
+  }
+}
+
+// ============ Real Call Test ============
+document.getElementById('btnRealTest').onclick = () => {
+  const errors = validateFlow();
+  if (errors.length > 0) { showToast(errors[0], 'error'); return; }
+  showToast(lang==='zh'?'已分配临时测试号码 +861012345000，有效期30分钟':'Test number assigned: +861012345000, valid for 30 min', 'success');
+};
+
+// ============ Init with demo flow ============
+function initDemo() {
+  const t = addNode('trigger','incoming_call',100,150);
+  const g = addNode('action','greeting',350,150);
+  const h = addNode('logic','business_hours',600,150);
+  const g2 = addNode('action','greeting',850,60);
+  const ask = addNode('action','ask_question',850,250);
+  const end = addNode('action','end_call',1100,250);
+  // Configure
+  g.config = {greeting_text:'您好，欢迎致电XX公司',voice:'女声-温柔',speed:'1.0x'};
+  g2.config = {greeting_text:'您好，现在是非营业时间',voice:'女声-温柔',speed:'1.0x'};
+  ask.config = {question_text:'请问您是要咨询、预约还是投诉？',input_method:'两者',max_wait:'10秒',retries:'2次'};
+  end.config = {end_msg:'感谢您的来电，再见！',send_sms:'否'};
+  // Update visuals
+  nodes.forEach(n => { const el = document.getElementById('node-'+n.id); if(el) el.querySelector('.flow-node-body').textContent = getNodeDesc(n); });
+  // Connections
+  connections.push({from:t.id,fromPort:'default',to:g.id,toPort:'input'});
+  connections.push({from:g.id,fromPort:'default',to:h.id,toPort:'input'});
+  connections.push({from:h.id,fromPort:'branch_open',to:ask.id,toPort:'input'});
+  connections.push({from:h.id,fromPort:'branch_closed',to:g2.id,toPort:'input'});
+  connections.push({from:ask.id,fromPort:'default',to:end.id,toPort:'input'});
+  document.getElementById('emptyState').style.display = 'none';
+  setTimeout(renderConnections, 100);
+}
+initDemo();
+</script>
+</body>
+</html>

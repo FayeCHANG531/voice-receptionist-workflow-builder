@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>语流 VoiceFlow Builder — Number Management</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter','Noto Sans SC',sans-serif;background:#f8f9fa;color:#1e293b;display:flex;min-height:100vh;}
+.sidebar{width:240px;background:#1a1a2e;color:#e2e8f0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sidebar-logo{padding:20px 24px;font-size:18px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;}
+.sidebar-logo .logo-icon{width:32px;height:32px;background:#4f46e5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-group-label{padding:8px 24px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;color:#cbd5e1;text-decoration:none;font-size:14px;transition:all .15s;cursor:pointer;border-left:3px solid transparent;}
+.nav-item:hover{background:rgba(79,70,229,.1);color:#e2e8f0;}
+.nav-item.active{background:rgba(79,70,229,.15);color:#fff;border-left-color:#4f46e5;}
+.nav-item .icon{width:20px;text-align:center;font-size:16px;}
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{height:56px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:600;}
+.topbar-actions{display:flex;align-items:center;gap:12px;}
+.lang-btn{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:500;color:#475569;}
+.content{flex:1;padding:32px;}
+/* Toolbar */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.toolbar-left{display:flex;gap:10px;align-items:center;}
+.filter-select{padding:7px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;font-family:inherit;background:#fff;color:#475569;}
+.btn-primary{background:#4f46e5;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:500;}
+.btn-primary:hover{background:#4338ca;}
+.btn-outline{background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:500;color:#475569;}
+.btn-danger{background:#fff;border:1px solid #fecaca;color:#ef4444;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:500;}
+.btn-danger:hover{background:#fef2f2;}
+/* Table */
+.table-wrap{background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid #e2e8f0;background:#f8fafc;}
+tbody td{padding:12px 20px;font-size:13px;border-bottom:1px solid #f1f5f9;}
+tbody tr:hover{background:#f8fafc;}
+.badge{font-size:11px;padding:3px 10px;border-radius:10px;font-weight:600;}
+.badge-active{background:#dcfce7;color:#166534;}
+.badge-inactive{background:#f1f5f9;color:#94a3b8;}
+.badge-pending{background:#fef3c7;color:#92400e;}
+.badge-porting{background:#eef2ff;color:#4338ca;}
+.type-tag{font-size:12px;padding:2px 8px;border-radius:4px;background:#f1f5f9;color:#64748b;font-weight:500;}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:1000;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff;border-radius:12px;padding:28px;width:560px;max-width:90vw;max-height:85vh;overflow-y:auto;}
+.modal h4{font-size:16px;font-weight:600;margin-bottom:16px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+.form-row{display:flex;gap:16px;margin-bottom:14px;}
+.form-group{flex:1;}
+.form-group label{display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px;}
+.form-group input,.form-group select{width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;font-family:inherit;}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+/* Purchase number grid */
+.purchase-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:16px 0;}
+.purchase-card{border:1px solid #e2e8f0;border-radius:8px;padding:14px;cursor:pointer;transition:all .15s;}
+.purchase-card:hover{border-color:#4f46e5;}
+.purchase-card.selected{border-color:#4f46e5;background:#eef2ff;}
+.purchase-card .p-num{font-size:15px;font-weight:700;}
+.purchase-card .p-loc{font-size:12px;color:#94a3b8;}
+.purchase-card .p-price{font-size:13px;font-weight:600;color:#4f46e5;margin-top:6px;}
+/* Warning box */
+.warning-box{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;font-size:13px;color:#92400e;display:flex;align-items:flex-start;gap:10px;margin-top:12px;}
+.warning-box .warn-icon{font-size:18px;flex-shrink:0;}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-logo"><div class="logo-icon">VF</div><span data-i18n="brand">语流 VoiceFlow</span></div>
+  <div class="sidebar-nav">
+    <div class="nav-group-label" data-i18n="nav_design">设计</div>
+    <a class="nav-item" href="canvas.html"><span class="icon">🎨</span><span data-i18n="nav_canvas">流程画布</span></a>
+    <a class="nav-item" href="node-config.html"><span class="icon">🧩</span><span data-i18n="nav_nodes">节点配置</span></a>
+    <a class="nav-item" href="version.html"><span class="icon">📋</span><span data-i18n="nav_version">版本管理</span></a>
+    <div class="nav-group-label" data-i18n="nav_ops">运营</div>
+    <a class="nav-item" href="runtime.html"><span class="icon">⚡</span><span data-i18n="nav_runtime">运行管理</span></a>
+    <a class="nav-item" href="dashboard.html"><span class="icon">📊</span><span data-i18n="nav_dashboard">运营看板</span></a>
+    <a class="nav-item" href="simulation.html"><span class="icon">🧪</span><span data-i18n="nav_simulation">模拟测试</span></a>
+    <div class="nav-group-label" data-i18n="nav_telecom">通信</div>
+    <a class="nav-item" href="telephony.html"><span class="icon">📞</span><span data-i18n="nav_telephony">通信设置</span></a>
+    <a class="nav-item active" href="numbers.html"><span class="icon">🔢</span><span data-i18n="nav_numbers">号码管理</span></a>
+  </div>
+</nav>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" data-i18n="page_title">号码管理</div>
+    <div class="topbar-actions"><button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button></div>
+  </div>
+  <div class="content">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <select class="filter-select" id="filterType" onchange="renderTable()">
+          <option value="all" data-i18n="all_types">全部类型</option>
+          <option value="platform" data-i18n="type_platform">平台号码</option>
+          <option value="byon" data-i18n="type_byon">自带号码</option>
+          <option value="webrtc" data-i18n="type_webrtc">WebRTC</option>
+        </select>
+        <select class="filter-select" id="filterStatus" onchange="renderTable()">
+          <option value="all" data-i18n="all_status">全部状态</option>
+          <option value="active" data-i18n="status_active">使用中</option>
+          <option value="inactive" data-i18n="status_inactive">未绑定</option>
+          <option value="pending" data-i18n="status_pending">处理中</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="showPurchaseModal()" data-i18n="purchase_new">+ 购买新号码</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th data-i18n="col_number">号码</th>
+          <th data-i18n="col_type">类型</th>
+          <th data-i18n="col_status">状态</th>
+          <th data-i18n="col_bound">绑定接待员</th>
+          <th data-i18n="col_date">购买日期</th>
+          <th data-i18n="col_action">操作</th>
+        </tr></thead>
+        <tbody id="numberTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Purchase modal -->
+<div class="modal-overlay" id="purchaseModal">
+  <div class="modal">
+    <h4 data-i18n="purchase_title">购买新号码</h4>
+    <div class="form-row">
+      <div class="form-group"><label data-i18n="area_code">区号</label><input type="text" placeholder="如 010、021" id="purchaseArea" oninput="filterPurchaseNumbers()"></div>
+      <div class="form-group"><label data-i18n="number_type">号码类型</label><select><option data-i18n="type_platform">平台号码</option><option data-i18n="type_byon">自带号码</option></select></div>
+    </div>
+    <div class="purchase-grid" id="purchaseGrid"></div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="hidePurchaseModal()" data-i18n="cancel">取消</button>
+      <button class="btn-primary" onclick="confirmPurchase()" data-i18n="confirm_purchase">确认购买</button>
+    </div>
+  </div>
+</div>
+
+<!-- Release modal -->
+<div class="modal-overlay" id="releaseModal">
+  <div class="modal">
+    <h4 data-i18n="release_title">释放号码</h4>
+    <p id="releaseNum" style="font-size:14px;color:#64748b;margin-bottom:12px;"></p>
+    <div class="warning-box">
+      <span class="warn-icon">⚠️</span>
+      <div>
+        <strong data-i18n="cooling_warning">7天冷静期提示</strong><br>
+        <span data-i18n="cooling_desc">释放号码后将进入7天冷静期，期间号码不可重新分配。冷静期结束后号码将被永久回收。</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="hideReleaseModal()" data-i18n="cancel">取消</button>
+      <button class="btn-danger" onclick="confirmRelease()" data-i18n="confirm_release">确认释放</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const i18n={zh:{brand:"语流 VoiceFlow",nav_design:"设计",nav_ops:"运营",nav_telecom:"通信",nav_canvas:"流程画布",nav_nodes:"节点配置",nav_version:"版本管理",nav_runtime:"运行管理",nav_dashboard:"运营看板",nav_simulation:"模拟测试",nav_telephony:"通信设置",nav_numbers:"号码管理",page_title:"号码管理",all_types:"全部类型",type_platform:"平台号码",type_byon:"自带号码",type_webrtc:"WebRTC",all_status:"全部状态",status_active:"使用中",status_inactive:"未绑定",status_pending:"处理中",purchase_new:"+ 购买新号码",col_number:"号码",col_type:"类型",col_status:"状态",col_bound:"绑定接待员",col_date:"购买日期",col_action:"操作",purchase_title:"购买新号码",area_code:"区号",number_type:"号码类型",cancel:"取消",confirm_purchase:"确认购买",release:"释放",release_title:"释放号码",cooling_warning:"7天冷静期提示",cooling_desc:"释放号码后将进入7天冷静期，期间号码不可重新分配。冷静期结束后号码将被永久回收。",confirm_release:"确认释放",purchased:"号码购买成功",released:"号码已释放",none_bound:"—"},en:{brand:"VoiceFlow",nav_design:"Design",nav_ops:"Operations",nav_telecom:"Telecom",nav_canvas:"Flow Canvas",nav_nodes:"Node Config",nav_version:"Versions",nav_runtime:"Runtime",nav_dashboard:"Dashboard",nav_simulation:"Simulation",nav_telephony:"Telephony",nav_numbers:"Numbers",page_title:"Number Management",all_types:"All Types",type_platform:"Platform",type_byon:"BYON",type_webrtc:"WebRTC",all_status:"All Status",status_active:"Active",status_inactive:"Unbound",status_pending:"Pending",purchase_new:"+ Purchase Number",col_number:"Number",col_type:"Type",col_status:"Status",col_bound:"Bound Receptionist",col_date:"Purchase Date",col_action:"Action",purchase_title:"Purchase New Number",area_code:"Area Code",number_type:"Number Type",cancel:"Cancel",confirm_purchase:"Confirm Purchase",release:"Release",release_title:"Release Number",cooling_warning:"7-Day Cooling Period",cooling_desc:"After release, the number enters a 7-day cooling period during which it cannot be reassigned. After the cooling period, the number will be permanently recycled.",confirm_release:"Confirm Release",purchased:"Number purchased successfully",released:"Number released",none_bound:"—"}};
+let lang='zh';
+
+const myNumbers=[
+  {num:'010-8888-1234',type:'platform',status:'active',bound:'前台总机接待',date:'2026-02-10'},
+  {num:'021-6666-3456',type:'platform',status:'active',bound:'售后客服接待',date:'2026-03-05'},
+  {num:'0755-9999-2345',type:'platform',status:'inactive',bound:'',date:'2026-04-12'},
+  {num:'0571-5555-0001',type:'byon',status:'active',bound:'VIP专线接待',date:'2026-01-20'},
+  {num:'020-3333-8888',type:'byon',status:'pending',bound:'',date:'2026-04-28'},
+  {num:'webrtc-001',type:'webrtc',status:'active',bound:'在线客服接待',date:'2026-03-15'}
+];
+
+const purchaseNumbers=[
+  {num:'010-8888-9999',loc:'北京',price:'¥35/月'},
+  {num:'010-7777-6543',loc:'北京',price:'¥35/月'},
+  {num:'021-6666-1111',loc:'上海',price:'¥40/月'},
+  {num:'021-5555-2222',loc:'上海',price:'¥35/月'},
+  {num:'0755-8888-3333',loc:'深圳',price:'¥35/月'},
+  {num:'0571-4444-5555',loc:'杭州',price:'¥30/月'}
+];
+
+let selectedPurchase=null;
+let releaseTarget=null;
+
+function toggleLang(){lang=lang==='zh'?'en':'zh';document.getElementById('langBtn').textContent=lang==='zh'?'EN':'中';document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(i18n[lang][k])el.textContent=i18n[lang][k];});renderTable();}
+
+function renderTable(){
+  const typeFilter=document.getElementById('filterType').value;
+  const statusFilter=document.getElementById('filterStatus').value;
+  const filtered=myNumbers.filter(n=>{
+    if(typeFilter!=='all'&&n.type!==typeFilter)return false;
+    if(statusFilter!=='all'&&n.status!==statusFilter)return false;
+    return true;
+  });
+  document.getElementById('numberTableBody').innerHTML=filtered.map(n=>{
+    const statusCls=n.status==='active'?'badge-active':n.status==='inactive'?'badge-inactive':'badge-pending';
+    const statusTxt=i18n[lang]['status_'+n.status]||n.status;
+    const typeLabel=i18n[lang]['type_'+n.type]||n.type;
+    return `<tr>
+      <td style="font-weight:600;">${n.num}</td>
+      <td><span class="type-tag">${typeLabel}</span></td>
+      <td><span class="badge ${statusCls}">${statusTxt}</span></td>
+      <td>${n.bound||i18n[lang].none_bound}</td>
+      <td>${n.date}</td>
+      <td><button class="btn-danger" onclick="showReleaseModal('${n.num}')">${i18n[lang].release}</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function showPurchaseModal(){document.getElementById('purchaseModal').classList.add('show');renderPurchaseGrid();}
+function hidePurchaseModal(){document.getElementById('purchaseModal').classList.remove('show');}
+function renderPurchaseGrid(){
+  const area=document.getElementById('purchaseArea')?.value||'';
+  const filtered=purchaseNumbers.filter(n=>!area||n.num.startsWith(area));
+  document.getElementById('purchaseGrid').innerHTML=filtered.map(n=>`
+    <div class="purchase-card ${selectedPurchase===n.num?'selected':''}" onclick="selectPurchase('${n.num}')">
+      <div class="p-num">${n.num}</div>
+      <div class="p-loc">${n.loc}</div>
+      <div class="p-price">${n.price}</div>
+    </div>`).join('');
+}
+function filterPurchaseNumbers(){renderPurchaseGrid();}
+function selectPurchase(num){selectedPurchase=num;renderPurchaseGrid();}
+function confirmPurchase(){if(!selectedPurchase)return;hidePurchaseModal();alert(i18n[lang].purchased);}
+
+function showReleaseModal(num){releaseTarget=num;document.getElementById('releaseNum').textContent=num;document.getElementById('releaseModal').classList.add('show');}
+function hideReleaseModal(){document.getElementById('releaseModal').classList.remove('show');}
+function confirmRelease(){hideReleaseModal();alert(i18n[lang].released);}
+
+renderTable();
+</script>
+</body>
+</html>

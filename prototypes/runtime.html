@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>语流 VoiceFlow Builder — Runtime Management</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter','Noto Sans SC',sans-serif;background:#f8f9fa;color:#1e293b;display:flex;min-height:100vh;}
+.sidebar{width:240px;background:#1a1a2e;color:#e2e8f0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sidebar-logo{padding:20px 24px;font-size:18px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;}
+.sidebar-logo .logo-icon{width:32px;height:32px;background:#4f46e5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-group-label{padding:8px 24px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;color:#cbd5e1;text-decoration:none;font-size:14px;transition:all .15s;cursor:pointer;border-left:3px solid transparent;}
+.nav-item:hover{background:rgba(79,70,229,.1);color:#e2e8f0;}
+.nav-item.active{background:rgba(79,70,229,.15);color:#fff;border-left-color:#4f46e5;}
+.nav-item .icon{width:20px;text-align:center;font-size:16px;}
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{height:56px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:600;}
+.topbar-actions{display:flex;align-items:center;gap:12px;}
+.lang-btn{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:500;color:#475569;}
+.content{flex:1;padding:32px;}
+/* Cards */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+.stat-card{background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:20px 24px;}
+.stat-card .stat-label{font-size:13px;color:#94a3b8;margin-bottom:8px;font-weight:500;}
+.stat-card .stat-value{font-size:28px;font-weight:700;color:#1e293b;}
+.stat-card .stat-sub{font-size:12px;color:#64748b;margin-top:4px;}
+.stat-card.accent .stat-value{color:#4f46e5;}
+.stat-card.success .stat-value{color:#22c55e;}
+.stat-card.warning .stat-value{color:#f59e0b;}
+.stat-card.error .stat-value{color:#ef4444;}
+/* Table */
+.table-section{background:#fff;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:28px;overflow:hidden;}
+.table-header{padding:16px 24px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;}
+.table-header h3{font-size:15px;font-weight:600;}
+.refresh-btn{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;color:#475569;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:12px 24px;text-align:left;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid #e2e8f0;background:#f8fafc;}
+tbody td{padding:12px 24px;font-size:13px;border-bottom:1px solid #f1f5f9;}
+tbody tr:hover{background:#f8fafc;}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;}
+.status-active{background:#22c55e;}
+.status-queued{background:#f59e0b;}
+.status-ended{background:#94a3b8;}
+/* Toggle */
+.toggle-wrap{display:flex;align-items:center;gap:12px;}
+.toggle{width:44px;height:24px;background:#cbd5e1;border-radius:12px;position:relative;cursor:pointer;transition:all .2s;}
+.toggle.on{background:#4f46e5;}
+.toggle .thumb{width:20px;height:20px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);}
+.toggle.on .thumb{left:22px;}
+/* Bottom panels */
+.bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.panel{background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;}
+.panel-header{padding:16px 24px;border-bottom:1px solid #e2e8f0;font-size:15px;font-weight:600;}
+.panel-body{padding:20px 24px;}
+.receptionist-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f1f5f9;}
+.receptionist-item:last-child{border-bottom:none;}
+.rec-info{display:flex;flex-direction:column;gap:2px;}
+.rec-name{font-size:14px;font-weight:600;}
+.rec-meta{font-size:12px;color:#94a3b8;}
+/* Alert config */
+.alert-form .form-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.alert-form label{font-size:13px;font-weight:500;width:120px;color:#475569;}
+.alert-form input,.alert-form select{flex:1;padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;font-family:inherit;}
+.alert-form input:focus,.alert-form select:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.save-btn{background:#4f46e5;color:#fff;border:none;border-radius:6px;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:500;margin-top:8px;}
+.save-btn:hover{background:#4338ca;}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-logo"><div class="logo-icon">VF</div><span data-i18n="brand">语流 VoiceFlow</span></div>
+  <div class="sidebar-nav">
+    <div class="nav-group-label" data-i18n="nav_design">设计</div>
+    <a class="nav-item" href="canvas.html"><span class="icon">🎨</span><span data-i18n="nav_canvas">流程画布</span></a>
+    <a class="nav-item" href="node-config.html"><span class="icon">🧩</span><span data-i18n="nav_nodes">节点配置</span></a>
+    <a class="nav-item" href="version.html"><span class="icon">📋</span><span data-i18n="nav_version">版本管理</span></a>
+    <div class="nav-group-label" data-i18n="nav_ops">运营</div>
+    <a class="nav-item active" href="runtime.html"><span class="icon">⚡</span><span data-i18n="nav_runtime">运行管理</span></a>
+    <a class="nav-item" href="dashboard.html"><span class="icon">📊</span><span data-i18n="nav_dashboard">运营看板</span></a>
+    <a class="nav-item" href="simulation.html"><span class="icon">🧪</span><span data-i18n="nav_simulation">模拟测试</span></a>
+    <div class="nav-group-label" data-i18n="nav_telecom">通信</div>
+    <a class="nav-item" href="telephony.html"><span class="icon">📞</span><span data-i18n="nav_telephony">通信设置</span></a>
+    <a class="nav-item" href="numbers.html"><span class="icon">🔢</span><span data-i18n="nav_numbers">号码管理</span></a>
+  </div>
+</nav>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" data-i18n="page_title">运行管理</div>
+    <div class="topbar-actions"><button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button></div>
+  </div>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card accent"><div class="stat-label" data-i18n="active_calls">当前通话</div><div class="stat-value">23</div><div class="stat-sub" data-i18n="active_sub">较昨日 +12%</div></div>
+      <div class="stat-card warning"><div class="stat-label" data-i18n="queue_count">排队等待</div><div class="stat-value">5</div><div class="stat-sub" data-i18n="queue_sub">平均等待 28s</div></div>
+      <div class="stat-card success"><div class="stat-label" data-i18n="today_total">今日总通话</div><div class="stat-value">347</div><div class="stat-sub" data-i18n="today_sub">目标完成 72%</div></div>
+      <div class="stat-card error"><div class="stat-label" data-i18n="exceptions">异常数</div><div class="stat-value">3</div><div class="stat-sub" data-i18n="exception_sub">2 超时 / 1 断线</div></div>
+    </div>
+    <div class="table-section">
+      <div class="table-header"><h3 data-i18n="call_list">实时通话列表</h3><button class="refresh-btn" onclick="refreshCalls()" data-i18n="refresh">刷新</button></div>
+      <table>
+        <thead><tr><th data-i18n="caller">来电号码</th><th data-i18n="current_node">当前节点</th><th data-i18n="duration">通话时长</th><th data-i18n="status">状态</th></tr></thead>
+        <tbody id="callTableBody"></tbody>
+      </table>
+    </div>
+    <div class="bottom-row">
+      <div class="panel">
+        <div class="panel-header" data-i18n="receptionist_control">接待员启停控制</div>
+        <div class="panel-body" id="receptionistList"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header" data-i18n="alert_config">告警配置</div>
+        <div class="panel-body">
+          <div class="alert-form">
+            <div class="form-row"><label data-i18n="queue_threshold">排队阈值</label><input type="number" value="20" id="queueThresh"></div>
+            <div class="form-row"><label data-i18n="wait_timeout">等待超时(s)</label><input type="number" value="60" id="waitTimeout"></div>
+            <div class="form-row"><label data-i18n="error_threshold">异常率阈值(%)</label><input type="number" value="5" id="errorThresh"></div>
+            <div class="form-row"><label data-i18n="alert_channel">告警渠道</label>
+              <select id="alertChannel"><option value="sms" data-i18n="sms">短信</option><option value="email" data-i18n="email">邮件</option><option value="webhook" data-i18n="webhook">Webhook</option></select>
+            </div>
+            <button class="save-btn" onclick="saveAlert()" data-i18n="save">保存配置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const i18n={
+  zh:{brand:"语流 VoiceFlow",nav_design:"设计",nav_ops:"运营",nav_telecom:"通信",nav_canvas:"流程画布",nav_nodes:"节点配置",nav_version:"版本管理",nav_runtime:"运行管理",nav_dashboard:"运营看板",nav_simulation:"模拟测试",nav_telephony:"通信设置",nav_numbers:"号码管理",page_title:"运行管理",active_calls:"当前通话",queue_count:"排队等待",today_total:"今日总通话",exceptions:"异常数",active_sub:"较昨日 +12%",queue_sub:"平均等待 28s",today_sub:"目标完成 72%",exception_sub:"2 超时 / 1 断线",call_list:"实时通话列表",refresh:"刷新",caller:"来电号码",current_node:"当前节点",duration:"通话时长",status:"状态",receptionist_control:"接待员启停控制",alert_config:"告警配置",queue_threshold:"排队阈值",wait_timeout:"等待超时(s)",error_threshold:"异常率阈值(%)",alert_channel:"告警渠道",sms:"短信",email:"邮件",webhook:"Webhook",save:"保存配置",active:"通话中",queued:"排队中",ended:"已结束",calls_min:"通话",saved:"配置已保存",enabled:"已启用",disabled:"已停用"},
+  en:{brand:"VoiceFlow",nav_design:"Design",nav_ops:"Operations",nav_telecom:"Telecom",nav_canvas:"Flow Canvas",nav_nodes:"Node Config",nav_version:"Versions",nav_runtime:"Runtime",nav_dashboard:"Dashboard",nav_simulation:"Simulation",nav_telephony:"Telephony",nav_numbers:"Numbers",page_title:"Runtime Management",active_calls:"Active Calls",queue_count:"Queue",today_total:"Today Total",exceptions:"Exceptions",active_sub:"+12% vs yesterday",queue_sub:"Avg wait 28s",today_sub:"72% of target",exception_sub:"2 timeout / 1 drop",call_list:"Live Calls",refresh:"Refresh",caller:"Caller",current_node:"Current Node",duration:"Duration",status:"Status",receptionist_control:"Receptionist Controls",alert_config:"Alert Configuration",queue_threshold:"Queue Threshold",wait_timeout:"Wait Timeout(s)",error_threshold:"Error Threshold(%)",alert_channel:"Alert Channel",sms:"SMS",email:"Email",webhook:"Webhook",save:"Save Config",active:"Active",queued:"Queued",ended:"Ended",calls_min:"calls",saved:"Config saved",enabled:"Enabled",disabled:"Disabled"}
+};
+let lang='zh';
+const calls=[
+  {caller:'138****2045',node:'IVR 主菜单',duration:'3:24',status:'active'},
+  {caller:'159****7832',node:'转人工等待',duration:'1:45',status:'queued'},
+  {caller:'186****3310',node:'语音识别',duration:'5:12',status:'active'},
+  {caller:'177****9012',node:'留言记录',duration:'0:38',status:'active'},
+  {caller:'135****4561',node:'—',duration:'0:00',status:'queued'},
+  {caller:'188****6677',node:'结束挂断',duration:'4:55',status:'ended'},
+  {caller:'139****8801',node:'IVR 子菜单',duration:'2:10',status:'active'}
+];
+const receptionists=[
+  {name:'前台总机接待',meta:'v3.0 · 绑定 3 个号码',on:true},
+  {name:'售后客服接待',meta:'v2.1 · 绑定 2 个号码',on:true},
+  {name:'VIP 专线接待',meta:'v2.0 · 绑定 1 个号码',on:false},
+  {name:'夜间值班接待',meta:'v1.0 · 绑定 1 个号码',on:true}
+];
+
+function toggleLang(){
+  lang=lang==='zh'?'en':'zh';
+  document.getElementById('langBtn').textContent=lang==='zh'?'EN':'中';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(i18n[lang][k])el.textContent=i18n[lang][k];});
+  renderCalls();renderReceptionists();
+}
+function renderCalls(){
+  const statusMap={active:'active',queued:'queued',ended:'ended'};
+  document.getElementById('callTableBody').innerHTML=calls.map(c=>`<tr><td>${c.caller}</td><td>${c.node}</td><td>${c.duration}</td><td><span class="status-dot status-${statusMap[c.status]}"></span>${i18n[lang][c.status]}</td></tr>`).join('');
+}
+function renderReceptionists(){
+  document.getElementById('receptionistList').innerHTML=receptionists.map((r,i)=>`
+    <div class="receptionist-item">
+      <div class="rec-info"><div class="rec-name">${r.name}</div><div class="rec-meta">${r.meta}</div></div>
+      <div class="toggle-wrap"><span style="font-size:13px;color:${r.on?'#22c55e':'#94a3b8'}">${i18n[lang][r.on?'enabled':'disabled']}</span><div class="toggle ${r.on?'on':''}" onclick="toggleRec(${i})"><div class="thumb"></div></div></div>
+    </div>`).join('');
+}
+function toggleRec(i){receptionists[i].on=!receptionists[i].on;renderReceptionists();}
+function refreshCalls(){renderCalls();}
+function saveAlert(){alert(i18n[lang].saved);}
+
+renderCalls();renderReceptionists();
+</script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>语流 VoiceFlow Builder — Telephony Settings</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter','Noto Sans SC',sans-serif;background:#f8f9fa;color:#1e293b;display:flex;min-height:100vh;}
+.sidebar{width:240px;background:#1a1a2e;color:#e2e8f0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sidebar-logo{padding:20px 24px;font-size:18px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;}
+.sidebar-logo .logo-icon{width:32px;height:32px;background:#4f46e5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-group-label{padding:8px 24px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;color:#cbd5e1;text-decoration:none;font-size:14px;transition:all .15s;cursor:pointer;border-left:3px solid transparent;}
+.nav-item:hover{background:rgba(79,70,229,.1);color:#e2e8f0;}
+.nav-item.active{background:rgba(79,70,229,.15);color:#fff;border-left-color:#4f46e5;}
+.nav-item .icon{width:20px;text-align:center;font-size:16px;}
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{height:56px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:600;}
+.topbar-actions{display:flex;align-items:center;gap:12px;}
+.lang-btn{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:500;color:#475569;}
+.content{flex:1;padding:32px;}
+/* Tabs */
+.tabs{display:flex;gap:4px;background:#fff;border-radius:10px;padding:4px;border:1px solid #e2e8f0;margin-bottom:24px;width:fit-content;}
+.tab{padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;color:#64748b;border:none;background:none;transition:all .15s;}
+.tab.active{background:#4f46e5;color:#fff;}
+/* Tab content */
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+/* Info banner */
+.info-banner{background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:20px 24px;margin-bottom:24px;display:flex;gap:16px;align-items:flex-start;}
+.info-banner .banner-icon{font-size:24px;}
+.info-banner h4{font-size:14px;font-weight:600;margin-bottom:4px;}
+.info-banner p{font-size:13px;color:#475569;line-height:1.6;}
+/* Steps */
+.steps{display:flex;gap:0;margin-bottom:24px;}
+.step{flex:1;text-align:center;position:relative;padding:16px 8px;}
+.step:not(:last-child)::after{content:'';position:absolute;top:28px;right:0;width:calc(50% - 24px);height:2px;background:#e2e8f0;transform:translateX(50%);}
+.step:not(:last-child).done::after{background:#4f46e5;}
+.step-num{width:28px;height:28px;border-radius:50%;background:#e2e8f0;color:#94a3b8;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;margin-bottom:6px;}
+.step.done .step-num{background:#4f46e5;color:#fff;}
+.step.current .step-num{background:#4f46e5;color:#fff;box-shadow:0 0 0 4px rgba(79,70,229,.2);}
+.step-label{font-size:12px;color:#64748b;}
+/* Number grid */
+.number-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+.number-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;cursor:pointer;transition:all .15s;}
+.number-card:hover{border-color:#4f46e5;box-shadow:0 2px 8px rgba(79,70,229,.08);}
+.number-card.selected{border-color:#4f46e5;background:#eef2ff;}
+.number-card .num{font-size:18px;font-weight:700;margin-bottom:4px;}
+.number-card .loc{font-size:12px;color:#94a3b8;}
+.number-card .price{font-size:14px;font-weight:600;color:#4f46e5;margin-top:8px;}
+/* Form */
+.form-section{background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:24px;margin-bottom:24px;}
+.form-section h4{font-size:15px;font-weight:600;margin-bottom:16px;}
+.form-row{display:flex;gap:16px;margin-bottom:14px;}
+.form-group{flex:1;}
+.form-group label{display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;font-family:inherit;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.btn-primary{background:#4f46e5;color:#fff;border:none;border-radius:6px;padding:9px 20px;font-size:13px;cursor:pointer;font-weight:500;}
+.btn-primary:hover{background:#4338ca;}
+.btn-outline{background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:9px 20px;font-size:13px;cursor:pointer;font-weight:500;color:#475569;}
+/* Code block */
+.code-block{background:#1e293b;color:#e2e8f0;border-radius:10px;padding:20px;font-family:'Courier New',monospace;font-size:13px;line-height:1.7;position:relative;margin-bottom:16px;overflow-x:auto;}
+.copy-btn{position:absolute;top:10px;right:10px;background:#334155;border:1px solid #475569;color:#e2e8f0;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;}
+.copy-btn:hover{background:#475569;}
+/* Preview */
+.preview-box{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;text-align:center;}
+.widget-preview{background:#f1f5f9;border-radius:10px;padding:20px;margin-top:16px;display:inline-block;}
+/* Cost table */
+.cost-table{width:100%;border-collapse:collapse;margin-top:16px;}
+.cost-table th,.cost-table td{padding:10px 16px;text-align:left;border-bottom:1px solid #f1f5f9;font-size:13px;}
+.cost-table th{font-weight:600;color:#94a3b8;font-size:12px;text-transform:uppercase;}
+/* Progress bar */
+.progress-bar{height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin:8px 0;}
+.progress-fill{height:100%;background:#4f46e5;border-radius:4px;transition:width .3s;}
+/* Porting */
+.porting-step{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #f1f5f9;}
+.porting-step .step-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.porting-step .step-icon.done{background:#dcfce7;color:#22c55e;}
+.porting-step .step-icon.current{background:#eef2ff;color:#4f46e5;}
+.porting-step .step-icon.pending{background:#f1f5f9;color:#94a3b8;}
+.porting-step .step-text{font-size:13px;color:#475569;}
+.porting-step .step-text strong{color:#1e293b;}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-logo"><div class="logo-icon">VF</div><span data-i18n="brand">语流 VoiceFlow</span></div>
+  <div class="sidebar-nav">
+    <div class="nav-group-label" data-i18n="nav_design">设计</div>
+    <a class="nav-item" href="canvas.html"><span class="icon">🎨</span><span data-i18n="nav_canvas">流程画布</span></a>
+    <a class="nav-item" href="node-config.html"><span class="icon">🧩</span><span data-i18n="nav_nodes">节点配置</span></a>
+    <a class="nav-item" href="version.html"><span class="icon">📋</span><span data-i18n="nav_version">版本管理</span></a>
+    <div class="nav-group-label" data-i18n="nav_ops">运营</div>
+    <a class="nav-item" href="runtime.html"><span class="icon">⚡</span><span data-i18n="nav_runtime">运行管理</span></a>
+    <a class="nav-item" href="dashboard.html"><span class="icon">📊</span><span data-i18n="nav_dashboard">运营看板</span></a>
+    <a class="nav-item" href="simulation.html"><span class="icon">🧪</span><span data-i18n="nav_simulation">模拟测试</span></a>
+    <div class="nav-group-label" data-i18n="nav_telecom">通信</div>
+    <a class="nav-item active" href="telephony.html"><span class="icon">📞</span><span data-i18n="nav_telephony">通信设置</span></a>
+    <a class="nav-item" href="numbers.html"><span class="icon">🔢</span><span data-i18n="nav_numbers">号码管理</span></a>
+  </div>
+</nav>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" data-i18n="page_title">通信设置</div>
+    <div class="topbar-actions"><button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button></div>
+  </div>
+  <div class="content">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(0)" data-i18n="tab_platform">平台号码</button>
+      <button class="tab" onclick="switchTab(1)" data-i18n="tab_byon">自带号码</button>
+      <button class="tab" onclick="switchTab(2)" data-i18n="tab_webrtc">WebRTC</button>
+    </div>
+
+    <!-- Tab 0: Platform Numbers -->
+    <div class="tab-content active" id="tab0">
+      <div class="info-banner">
+        <div class="banner-icon">📞</div>
+        <div><h4 data-i18n="platform_title">平台托管的虚拟号码</h4><p data-i18n="platform_desc">直接从平台购买号码，无需自行配置线路。适合快速启动、中小规模使用场景。</p></div>
+      </div>
+      <div class="steps">
+        <div class="step done"><div class="step-num">1</div><div class="step-label" data-i18n="step_search">搜索号码</div></div>
+        <div class="step done"><div class="step-num">2</div><div class="step-label" data-i18n="step_purchase">购买号码</div></div>
+        <div class="step current"><div class="step-num">3</div><div class="step-label" data-i18n="step_bind">绑定接待员</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-label" data-i18n="step_go_live">上线</div></div>
+      </div>
+      <h4 style="font-size:14px;font-weight:600;margin-bottom:12px;" data-i18n="search_by_area">按区号搜索可用号码</h4>
+      <div style="display:flex;gap:12px;margin-bottom:16px;">
+        <input type="text" placeholder="输入区号，如 010、021" style="padding:9px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;width:260px;" id="areaInput">
+        <button class="btn-primary" onclick="searchNumbers()" data-i18n="search">搜索</button>
+      </div>
+      <div class="number-grid" id="numberGrid"></div>
+      <div class="form-section">
+        <h4 data-i18n="cost_structure">费用结构</h4>
+        <table class="cost-table">
+          <thead><tr><th data-i18n="cost_item">项目</th><th data-i18n="cost_price">价格</th><th data-i18n="cost_note">说明</th></tr></thead>
+          <tbody>
+            <tr><td data-i18n="cost_number">号码月租</td><td>¥35/月</td><td data-i18n="cost_number_note">每个虚拟号码</td></tr>
+            <tr><td data-i18n="cost_inbound">呼入通话</td><td>¥0.06/分钟</td><td data-i18n="cost_inbound_note">含录音存储</td></tr>
+            <tr><td data-i18n="cost_outbound">呼出通话</td><td>¥0.08/分钟</td><td data-i18n="cost_outbound_note">转接呼出</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="font-size:13px;color:#64748b;padding:12px 0;" data-i18n="target_audience">适合人群：中小型企业、快速上线需求、无自有线路</div>
+    </div>
+
+    <!-- Tab 1: BYON -->
+    <div class="tab-content" id="tab1">
+      <div class="info-banner">
+        <div class="banner-icon">🔗</div>
+        <div><h4 data-i18n="byon_title">自带号码 (BYON)</h4><p data-i18n="byon_desc">通过 SIP 转发接入您现有的号码，或申请号码携入（携号）。适合已有线路资源的企业。</p></div>
+      </div>
+      <div class="steps">
+        <div class="step done"><div class="step-num">1</div><div class="step-label" data-i18n="step_config">配置 SIP</div></div>
+        <div class="step current"><div class="step-num">2</div><div class="step-label" data-i18n="step_verify">验证连通</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-label" data-i18n="step_bind">绑定接待员</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-label" data-i18n="step_go_live">上线</div></div>
+      </div>
+      <div class="form-section">
+        <h4 data-i18n="sip_config">SIP 转发配置</h4>
+        <div class="form-row">
+          <div class="form-group"><label data-i18n="sip_server">SIP 服务器地址</label><input type="text" value="sip.provider.com" id="sipServer"></div>
+          <div class="form-group"><label data-i18n="sip_port">端口</label><input type="text" value="5060" id="sipPort"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label data-i18n="sip_user">用户名</label><input type="text" value="voiceflow-trunk" id="sipUser"></div>
+          <div class="form-group"><label data-i18n="sip_pass">密码</label><input type="password" value="••••••••" id="sipPass"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label data-i18n="sip_codec">编码格式</label><select><option>PCMU (G.711u)</option><option>PCMA (G.711a)</option><option>OPUS</option></select></div>
+          <div class="form-group"><label data-i18n="sip_transport">传输协议</label><select><option>UDP</option><option>TCP</option><option>TLS</option></select></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn-primary" onclick="testSip()" data-i18n="test_connection">测试连接</button>
+          <button class="btn-outline" onclick="saveSip()" data-i18n="save">保存</button>
+        </div>
+      </div>
+      <div class="form-section">
+        <h4 data-i18n="porting_title">号码携入进度</h4>
+        <div class="porting-step"><div class="step-icon done">✓</div><div class="step-text"><strong data-i18n="port_submit">提交携入申请</strong><br><span data-i18n="port_submit_date">2026-04-20 已提交</span></div></div>
+        <div class="porting-step"><div class="step-icon done">✓</div><div class="step-text"><strong data-i18n="port_verify">运营商审核</strong><br><span data-i18n="port_verify_date">2026-04-22 已通过</span></div></div>
+        <div class="porting-step"><div class="step-icon current">3</div><div class="step-text"><strong data-i18n="port_transfer">号码转移</strong><br><span data-i18n="port_transfer_date">预计 2026-05-05 完成</span><div class="progress-bar" style="width:200px;margin-top:6px;"><div class="progress-fill" style="width:60%"></div></div></div></div>
+        <div class="porting-step"><div class="step-icon pending">4</div><div class="step-text"><strong data-i18n="port_active">号码激活</strong></div></div>
+      </div>
+      <div class="form-section">
+        <h4 data-i18n="cost_structure">费用结构</h4>
+        <table class="cost-table">
+          <thead><tr><th data-i18n="cost_item">项目</th><th data-i18n="cost_price">价格</th><th data-i18n="cost_note">说明</th></tr></thead>
+          <tbody>
+            <tr><td data-i18n="cost_sip_trunk">SIP 中继</td><td>¥0/月</td><td data-i18n="cost_sip_note">平台不收取</td></tr>
+            <tr><td data-i18n="cost_inbound">呼入通话</td><td>¥0.04/分钟</td><td data-i18n="cost_inbound_note">比平台号码低</td></tr>
+            <tr><td data-i18n="cost_porting">携号费用</td><td>¥200/号</td><td data-i18n="cost_porting_note">一次性</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="font-size:13px;color:#64748b;padding:12px 0;" data-i18n="byon_audience">适合人群：已有 PBX/SIP 线路、企业级用户、需要保留原号码</div>
+    </div>
+
+    <!-- Tab 2: WebRTC -->
+    <div class="tab-content" id="tab2">
+      <div class="info-banner">
+        <div class="banner-icon">🌐</div>
+        <div><h4 data-i18n="webrtc_title">WebRTC 嵌入式通话</h4><p data-i18n="webrtc_desc">将通话组件嵌入您的网站或应用，访客可直接通过浏览器发起通话，无需安装任何插件。</p></div>
+      </div>
+      <div class="steps">
+        <div class="step done"><div class="step-num">1</div><div class="step-label" data-i18n="step_embed">嵌入代码</div></div>
+        <div class="step current"><div class="step-num">2</div><div class="step-label" data-i18n="step_customize">自定义样式</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-label" data-i18n="step_test">测试通话</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-label" data-i18n="step_publish">发布上线</div></div>
+      </div>
+      <div class="form-section">
+        <h4 data-i18n="embed_code">嵌入代码</h4>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode()" data-i18n="copy">复制</button>
+&lt;script src="https://cdn.voiceflow.io/widget.js"&gt;&lt;/script&gt;<br>
+&lt;script&gt;<br>
+&nbsp;&nbsp;VoiceFlowWidget.init({<br>
+&nbsp;&nbsp;&nbsp;&nbsp;receptionistId: 'rec_abc123',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;position: 'bottom-right',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;theme: { primaryColor: '#4f46e5' },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;language: 'zh-CN'<br>
+&nbsp;&nbsp;});<br>
+&lt;/script&gt;
+        </div>
+      </div>
+      <div class="form-section">
+        <h4 data-i18n="widget_preview">组件预览</h4>
+        <div class="preview-box">
+          <div style="font-size:14px;color:#94a3b8;margin-bottom:16px;" data-i18n="preview_hint">以下为嵌入组件的视觉效果</div>
+          <div class="widget-preview">
+            <div style="width:280px;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.1);padding:20px;text-align:center;">
+              <div style="width:48px;height:48px;background:#4f46e5;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;">📞</div>
+              <div style="font-size:15px;font-weight:600;margin-bottom:4px;" data-i18n="widget_title">语流智能接待</div>
+              <div style="font-size:13px;color:#94a3b8;margin-bottom:16px;" data-i18n="widget_sub">点击开始通话</div>
+              <button style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:10px 32px;font-size:14px;font-weight:500;cursor:pointer;" data-i18n="widget_btn">开始通话</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <h4 data-i18n="cost_structure">费用结构</h4>
+        <table class="cost-table">
+          <thead><tr><th data-i18n="cost_item">项目</th><th data-i18n="cost_price">价格</th><th data-i18n="cost_note">说明</th></tr></thead>
+          <tbody>
+            <tr><td data-i18n="cost_webrtc_call">WebRTC 通话</td><td>¥0.03/分钟</td><td data-i18n="cost_webrtc_note">浏览器直连</td></tr>
+            <tr><td data-i18n="cost_recording">录音存储</td><td>¥0.01/分钟</td><td data-i18n="cost_recording_note">可选</td></tr>
+            <tr><td data-i18n="cost_widget">嵌入组件</td><td>免费</td><td data-i18n="cost_widget_note">不限通话量</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="font-size:13px;color:#64748b;padding:12px 0;" data-i18n="webrtc_audience">适合人群：网站客服、在线咨询、SaaS 嵌入通话、无需电话号码场景</div>
+    </div>
+  </div>
+</div>
+<script>
+const i18n={zh:{brand:"语流 VoiceFlow",nav_design:"设计",nav_ops:"运营",nav_telecom:"通信",nav_canvas:"流程画布",nav_nodes:"节点配置",nav_version:"版本管理",nav_runtime:"运行管理",nav_dashboard:"运营看板",nav_simulation:"模拟测试",nav_telephony:"通信设置",nav_numbers:"号码管理",page_title:"通信设置",tab_platform:"平台号码",tab_byon:"自带号码",tab_webrtc:"WebRTC",platform_title:"平台托管的虚拟号码",platform_desc:"直接从平台购买号码，无需自行配置线路。适合快速启动、中小规模使用场景。",step_search:"搜索号码",step_purchase:"购买号码",step_bind:"绑定接待员",step_go_live:"上线",step_config:"配置 SIP",step_verify:"验证连通",step_embed:"嵌入代码",step_customize:"自定义样式",step_test:"测试通话",step_publish:"发布上线",search_by_area:"按区号搜索可用号码",search:"搜索",cost_structure:"费用结构",cost_item:"项目",cost_price:"价格",cost_note:"说明",cost_number:"号码月租",cost_number_note:"每个虚拟号码",cost_inbound:"呼入通话",cost_inbound_note:"含录音存储",cost_outbound:"呼出通话",cost_outbound_note:"转接呼出",target_audience:"适合人群：中小型企业、快速上线需求、无自有线路",byon_title:"自带号码 (BYON)",byon_desc:"通过 SIP 转发接入您现有的号码，或申请号码携入（携号）。适合已有线路资源的企业。",sip_config:"SIP 转发配置",sip_server:"SIP 服务器地址",sip_port:"端口",sip_user:"用户名",sip_pass:"密码",sip_codec:"编码格式",sip_transport:"传输协议",test_connection:"测试连接",save:"保存",porting_title:"号码携入进度",port_submit:"提交携入申请",port_submit_date:"2026-04-20 已提交",port_verify:"运营商审核",port_verify_date:"2026-04-22 已通过",port_transfer:"号码转移",port_transfer_date:"预计 2026-05-05 完成",port_active:"号码激活",cost_sip_trunk:"SIP 中继",cost_sip_note:"平台不收取",cost_porting:"携号费用",cost_porting_note:"一次性",byon_audience:"适合人群：已有 PBX/SIP 线路、企业级用户、需要保留原号码",webrtc_title:"WebRTC 嵌入式通话",webrtc_desc:"将通话组件嵌入您的网站或应用，访客可直接通过浏览器发起通话，无需安装任何插件。",embed_code:"嵌入代码",copy:"复制",widget_preview:"组件预览",preview_hint:"以下为嵌入组件的视觉效果",widget_title:"语流智能接待",widget_sub:"点击开始通话",widget_btn:"开始通话",cost_webrtc_call:"WebRTC 通话",cost_webrtc_note:"浏览器直连",cost_recording:"录音存储",cost_recording_note:"可选",cost_widget:"嵌入组件",cost_widget_note:"不限通话量",webrtc_audience:"适合人群：网站客服、在线咨询、SaaS 嵌入通话、无需电话号码场景",copied:"已复制",sip_ok:"SIP 连接测试成功",sip_saved:"SIP 配置已保存"},en:{brand:"VoiceFlow",nav_design:"Design",nav_ops:"Operations",nav_telecom:"Telecom",nav_canvas:"Flow Canvas",nav_nodes:"Node Config",nav_version:"Versions",nav_runtime:"Runtime",nav_dashboard:"Dashboard",nav_simulation:"Simulation",nav_telephony:"Telephony",nav_numbers:"Numbers",page_title:"Telephony Settings",tab_platform:"Platform Numbers",tab_byon:"Bring Your Own",tab_webrtc:"WebRTC",platform_title:"Platform Managed Virtual Numbers",platform_desc:"Purchase numbers directly from the platform, no line configuration needed. Ideal for quick start and SMB use cases.",step_search:"Search",step_purchase:"Purchase",step_bind:"Bind",step_go_live:"Go Live",step_config:"Config SIP",step_verify:"Verify",step_embed:"Embed Code",step_customize:"Customize",step_test:"Test Call",step_publish:"Publish",search_by_area:"Search available numbers by area code",search:"Search",cost_structure:"Cost Structure",cost_item:"Item",cost_price:"Price",cost_note:"Note",cost_number:"Monthly Rental",cost_number_note:"Per virtual number",cost_inbound:"Inbound",cost_inbound_note:"Includes recording",cost_outbound:"Outbound",cost_outbound_note:"Transfer calls",target_audience:"For: SMBs, quick launch, no existing lines",byon_title:"Bring Your Own Number",byon_desc:"Connect your existing numbers via SIP forwarding or apply for number porting. For enterprises with existing line resources.",sip_config:"SIP Forwarding Configuration",sip_server:"SIP Server",sip_port:"Port",sip_user:"Username",sip_pass:"Password",sip_codec:"Codec",sip_transport:"Transport",test_connection:"Test Connection",save:"Save",porting_title:"Number Porting Progress",port_submit:"Submit Porting Request",port_submit_date:"2026-04-20 Submitted",port_verify:"Carrier Review",port_verify_date:"2026-04-22 Approved",port_transfer:"Number Transfer",port_transfer_date:"Est. 2026-05-05",port_active:"Activate",cost_sip_trunk:"SIP Trunk",cost_sip_note:"No platform fee",cost_porting:"Porting Fee",cost_porting_note:"One-time",byon_audience:"For: Enterprises with PBX/SIP, need to retain original numbers",webrtc_title:"WebRTC Embedded Calls",webrtc_desc:"Embed the call widget on your website or app. Visitors can call directly from the browser, no plugins required.",embed_code:"Embed Code",copy:"Copy",widget_preview:"Widget Preview",preview_hint:"Preview of the embedded widget",widget_title:"VoiceFlow Receptionist",widget_sub:"Click to start a call",widget_btn:"Start Call",cost_webrtc_call:"WebRTC Call",cost_webrtc_note:"Browser direct",cost_recording:"Recording Storage",cost_recording_note:"Optional",cost_widget:"Widget",cost_widget_note:"Unlimited calls",webrtc_audience:"For: Web support, online consulting, SaaS integration, no phone number needed",copied:"Copied!",sip_ok:"SIP connection test successful",sip_saved:"SIP config saved"}};
+let lang='zh';
+
+const numbers=[
+  {num:'010-8888-1234',loc:'北京',price:'¥35/月'},
+  {num:'010-8888-5678',loc:'北京',price:'¥35/月'},
+  {num:'021-6666-3456',loc:'上海',price:'¥35/月'},
+  {num:'021-6666-7890',loc:'上海',price:'¥40/月'},
+  {num:'0755-9999-2345',loc:'深圳',price:'¥35/月'},
+  {num:'0571-5555-6789',loc:'杭州',price:'¥30/月'}
+];
+let selectedNum=null;
+
+function toggleLang(){lang=lang==='zh'?'en':'zh';document.getElementById('langBtn').textContent=lang==='zh'?'EN':'中';document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(i18n[lang][k])el.textContent=i18n[lang][k];});}
+
+function switchTab(idx){
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',i===idx);});
+  document.querySelectorAll('.tab-content').forEach((t,i)=>{t.classList.toggle('active',i===idx);});
+}
+
+function searchNumbers(){
+  const grid=document.getElementById('numberGrid');
+  grid.innerHTML=numbers.map(n=>`
+    <div class="number-card ${selectedNum===n.num?'selected':''}" onclick="selectNum('${n.num}',this)">
+      <div class="num">${n.num}</div>
+      <div class="loc">${n.loc}</div>
+      <div class="price">${n.price}</div>
+    </div>`).join('');
+}
+function selectNum(num,el){selectedNum=num;searchNumbers();}
+
+function copyCode(){
+  navigator.clipboard?.writeText('<script src="https://cdn.voiceflow.io/widget.js"></script>');
+  alert(i18n[lang].copied);
+}
+function testSip(){alert(i18n[lang].sip_ok);}
+function saveSip(){alert(i18n[lang].sip_saved);}
+
+searchNumbers();
+</script>
+</body>
+</html>

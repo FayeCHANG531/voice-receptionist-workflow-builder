@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>语流 VoiceFlow Builder — Version Management</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter','Noto Sans SC',sans-serif;background:#f8f9fa;color:#1e293b;display:flex;min-height:100vh;}
+/* Sidebar */
+.sidebar{width:240px;background:#1a1a2e;color:#e2e8f0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sidebar-logo{padding:20px 24px;font-size:18px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;}
+.sidebar-logo .logo-icon{width:32px;height:32px;background:#4f46e5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-group-label{padding:8px 24px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;color:#cbd5e1;text-decoration:none;font-size:14px;transition:all .15s;cursor:pointer;border-left:3px solid transparent;}
+.nav-item:hover{background:rgba(79,70,229,.1);color:#e2e8f0;}
+.nav-item.active{background:rgba(79,70,229,.15);color:#fff;border-left-color:#4f46e5;}
+.nav-item .icon{width:20px;text-align:center;font-size:16px;}
+/* Main */
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{height:56px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:600;color:#1e293b;}
+.topbar-actions{display:flex;align-items:center;gap:12px;}
+.lang-btn{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:500;color:#475569;transition:all .15s;}
+.lang-btn:hover{background:#e2e8f0;}
+.content{flex:1;padding:32px;}
+/* Version page layout */
+.version-layout{display:flex;gap:24px;height:calc(100vh - 56px - 64px);}
+.version-left{width:340px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;display:flex;flex-direction:column;}
+.version-left-header{padding:20px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;}
+.version-left-header h3{font-size:15px;font-weight:600;}
+.create-btn{background:#4f46e5;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:500;}
+.create-btn:hover{background:#4338ca;}
+.version-list{flex:1;overflow-y:auto;padding:8px;}
+.version-item{padding:14px 16px;border-radius:8px;cursor:pointer;transition:all .15s;border:2px solid transparent;margin-bottom:4px;}
+.version-item:hover{background:#f1f5f9;}
+.version-item.active{background:#eef2ff;border-color:#4f46e5;}
+.version-item-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.version-tag{font-size:14px;font-weight:600;color:#1e293b;}
+.version-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;}
+.badge-draft{background:#fef3c7;color:#92400e;}
+.badge-published{background:#dcfce7;color:#166534;}
+.version-meta{font-size:12px;color:#94a3b8;margin-bottom:4px;}
+.version-desc{font-size:13px;color:#64748b;line-height:1.5;}
+/* Right detail panel */
+.version-right{flex:1;background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;display:flex;flex-direction:column;}
+.version-right-header{padding:20px 24px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;}
+.version-right-header h3{font-size:15px;font-weight:600;}
+.header-actions{display:flex;gap:8px;}
+.btn-outline{background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;color:#475569;font-weight:500;transition:all .15s;}
+.btn-outline:hover{background:#f8fafc;border-color:#cbd5e1;}
+.btn-danger{background:#fff;border:1px solid #fecaca;color:#ef4444;border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;font-weight:500;transition:all .15s;}
+.btn-danger:hover{background:#fef2f2;}
+.btn-primary{background:#4f46e5;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;font-weight:500;}
+.btn-primary:hover{background:#4338ca;}
+.version-detail-body{flex:1;overflow-y:auto;padding:24px;}
+.detail-info{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.info-card{background:#f8fafc;border-radius:8px;padding:14px 16px;}
+.info-card .label{font-size:12px;color:#94a3b8;margin-bottom:4px;}
+.info-card .value{font-size:14px;font-weight:600;color:#1e293b;}
+/* Diff */
+.diff-section{margin-top:20px;}
+.diff-section h4{font-size:14px;font-weight:600;margin-bottom:12px;color:#475569;}
+.diff-line{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:6px;margin-bottom:4px;font-size:13px;font-family:'Inter',monospace;}
+.diff-added{background:#f0fdf4;color:#166534;border-left:3px solid #22c55e;}
+.diff-deleted{background:#fef2f2;color:#991b1b;border-left:3px solid #ef4444;}
+.diff-modified{background:#fffbeb;color:#92400e;border-left:3px solid #f59e0b;}
+.diff-icon{font-size:16px;width:20px;text-align:center;}
+.diff-content{flex:1;}
+.diff-node-id{font-weight:600;}
+/* Empty state */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#94a3b8;text-align:center;padding:40px;}
+.empty-state .empty-icon{font-size:48px;margin-bottom:16px;opacity:.5;}
+.empty-state h4{font-size:16px;font-weight:600;color:#64748b;margin-bottom:8px;}
+.empty-state p{font-size:14px;margin-bottom:20px;}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:1000;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff;border-radius:12px;padding:28px;width:420px;max-width:90vw;}
+.modal h4{font-size:16px;font-weight:600;margin-bottom:8px;}
+.modal p{font-size:14px;color:#64748b;margin-bottom:20px;line-height:1.6;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;}
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px;}
+</style>
+</head>
+<body>
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">VF</div>
+    <span data-i18n="brand">语流 VoiceFlow</span>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-group-label" data-i18n="nav_design">设计</div>
+    <a class="nav-item" href="canvas.html"><span class="icon">🎨</span><span data-i18n="nav_canvas">流程画布</span></a>
+    <a class="nav-item" href="node-config.html"><span class="icon">🧩</span><span data-i18n="nav_nodes">节点配置</span></a>
+    <a class="nav-item active" href="version.html"><span class="icon">📋</span><span data-i18n="nav_version">版本管理</span></a>
+    <div class="nav-group-label" data-i18n="nav_ops">运营</div>
+    <a class="nav-item" href="runtime.html"><span class="icon">⚡</span><span data-i18n="nav_runtime">运行管理</span></a>
+    <a class="nav-item" href="dashboard.html"><span class="icon">📊</span><span data-i18n="nav_dashboard">运营看板</span></a>
+    <a class="nav-item" href="simulation.html"><span class="icon">🧪</span><span data-i18n="nav_simulation">模拟测试</span></a>
+    <div class="nav-group-label" data-i18n="nav_telecom">通信</div>
+    <a class="nav-item" href="telephony.html"><span class="icon">📞</span><span data-i18n="nav_telephony">通信设置</span></a>
+    <a class="nav-item" href="numbers.html"><span class="icon">🔢</span><span data-i18n="nav_numbers">号码管理</span></a>
+  </div>
+</nav>
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" data-i18n="page_title">版本管理</div>
+    <div class="topbar-actions">
+      <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="version-layout">
+      <!-- Left: version list -->
+      <div class="version-left">
+        <div class="version-left-header">
+          <h3 data-i18n="version_list">版本列表</h3>
+          <button class="create-btn" onclick="createVersion()" data-i18n="new_version">+ 新版本</button>
+        </div>
+        <div class="version-list" id="versionList"></div>
+      </div>
+      <!-- Right: detail -->
+      <div class="version-right" id="detailPanel">
+        <div class="version-right-header">
+          <h3 data-i18n="version_detail">版本详情</h3>
+          <div class="header-actions" id="headerActions" style="display:none">
+            <button class="btn-outline" onclick="publishVersion()" id="publishBtn" data-i18n="publish">发布</button>
+            <button class="btn-danger" onclick="showRollbackModal()" data-i18n="rollback">回滚</button>
+          </div>
+        </div>
+        <div class="version-detail-body" id="detailBody">
+          <div class="empty-state" id="emptyDetail">
+            <div class="empty-icon">📋</div>
+            <h4 data-i18n="empty_title">暂无选中版本</h4>
+            <p data-i18n="empty_desc">从左侧选择一个版本查看详情</p>
+          </div>
+          <div id="detailContent" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Rollback modal -->
+<div class="modal-overlay" id="rollbackModal">
+  <div class="modal">
+    <h4 data-i18n="rollback_confirm_title">确认回滚</h4>
+    <p data-i18n="rollback_confirm_desc">回滚到该版本将覆盖当前草稿，此操作不可撤销。确定要继续吗？</p>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="hideRollbackModal()" data-i18n="cancel">取消</button>
+      <button class="btn-danger" onclick="doRollback()" data-i18n="confirm_rollback">确认回滚</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const i18n={
+  zh:{
+    brand:"语流 VoiceFlow",nav_design:"设计",nav_ops:"运营",nav_telecom:"通信",
+    nav_canvas:"流程画布",nav_nodes:"节点配置",nav_version:"版本管理",nav_runtime:"运行管理",
+    nav_dashboard:"运营看板",nav_simulation:"模拟测试",nav_telephony:"通信设置",nav_numbers:"号码管理",
+    page_title:"版本管理",version_list:"版本列表",new_version:"+ 新版本",version_detail:"版本详情",
+    publish:"发布",rollback:"回滚",empty_title:"暂无选中版本",empty_desc:"从左侧选择一个版本查看详情",
+    rollback_confirm_title:"确认回滚",rollback_confirm_desc:"回滚到该版本将覆盖当前草稿，此操作不可撤销。确定要继续吗？",
+    cancel:"取消",confirm_rollback:"确认回滚",created:"创建时间",author:"作者",status:"状态",
+    nodes_count:"节点数",diff_changes:"变更对比",rollback_success:"已成功回滚",
+    draft:"草稿",published:"已发布",empty_list_title:"暂无版本",
+    empty_list_desc:"发布流程后将自动创建版本记录",version_name:"版本",
+    desc:"描述",added:"新增",deleted:"删除",modified:"修改",
+    node:"节点",rollback_to:"回滚至此版本",publish_success:"发布成功"
+  },
+  en:{
+    brand:"VoiceFlow",nav_design:"Design",nav_ops:"Operations",nav_telecom:"Telecom",
+    nav_canvas:"Flow Canvas",nav_nodes:"Node Config",nav_version:"Versions",nav_runtime:"Runtime",
+    nav_dashboard:"Dashboard",nav_simulation:"Simulation",nav_telephony:"Telephony",nav_numbers:"Numbers",
+    page_title:"Version Management",version_list:"Versions",new_version:"+ New Version",version_detail:"Version Detail",
+    publish:"Publish",rollback:"Rollback",empty_title:"No Version Selected",empty_desc:"Select a version from the left to view details",
+    rollback_confirm_title:"Confirm Rollback",rollback_confirm_desc:"Rolling back will overwrite the current draft. This action cannot be undone. Continue?",
+    cancel:"Cancel",confirm_rollback:"Confirm Rollback",created:"Created",author:"Author",status:"Status",
+    nodes_count:"Nodes",diff_changes:"Changes",rollback_success:"Rollback successful",
+    draft:"Draft",published:"Published",empty_list_title:"No Versions Yet",
+    empty_list_desc:"Versions are created automatically when you publish",version_name:"Version",
+    desc:"Description",added:"Added",deleted:"Deleted",modified:"Modified",
+    node:"Node",rollback_to:"Rollback to this version",publish_success:"Published"
+  }
+};
+let lang='zh';
+const versions=[
+  {id:1,tag:'v3.0',date:'2026-04-28 16:30',author:'张明',status:'draft',desc:'新增IVR菜单节点，优化转人工逻辑',nodes:12,
+   diff:[{type:'added',text:'IVR菜单节点 (ivr_menu_01)'},{type:'added',text:'条件分支节点 (branch_05)'},{type:'modified',text:'转人工节点 (transfer_02) - 超时时间 30s→60s'},{type:'deleted',text:'旧问候语节点 (greeting_old)'}]},
+  {id:2,tag:'v2.1',date:'2026-04-15 10:20',author:'李华',status:'published',desc:'修复语音识别超时问题，增加重试机制',nodes:9,
+   diff:[{type:'modified',text:'语音识别节点 (asr_01) - 增加重试逻辑'},{type:'added',text:'超时处理节点 (timeout_01)'},{type:'modified',text:'主流程节点 (main_01) - 超时跳转逻辑'}]},
+  {id:3,tag:'v2.0',date:'2026-03-20 09:00',author:'张明',status:'published',desc:'重构流程架构，支持多级菜单',nodes:8,
+   diff:[{type:'added',text:'子流程节点 (subflow_01)'},{type:'added',text:'子流程节点 (subflow_02)'},{type:'modified',text:'主流程节点 (main_01) - 连接子流程'},{type:'deleted',text:'旧菜单节点 (menu_legacy)'}]},
+  {id:4,tag:'v1.0',date:'2026-02-10 14:00',author:'王磊',status:'published',desc:'初始版本，基础接待流程',nodes:5,
+   diff:[{type:'added',text:'欢迎语节点 (greeting_01)'},{type:'added',text:'语音识别节点 (asr_01)'},{type:'added',text:'转人工节点 (transfer_01)'},{type:'added',text:'留言节点 (voicemail_01)'},{type:'added',text:'结束节点 (end_01)'}]}
+];
+let selectedId=null;
+
+function toggleLang(){
+  lang=lang==='zh'?'en':'zh';
+  document.getElementById('langBtn').textContent=lang==='zh'?'EN':'中';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key=el.getAttribute('data-i18n');
+    if(i18n[lang][key]) el.textContent=i18n[lang][key];
+  });
+  renderList();
+  if(selectedId) renderDetail(selectedId);
+}
+
+function renderList(){
+  const list=document.getElementById('versionList');
+  if(versions.length===0){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><h4>${i18n[lang].empty_list_title}</h4><p>${i18n[lang].empty_list_desc}</p></div>`;
+    return;
+  }
+  list.innerHTML=versions.map(v=>`
+    <div class="version-item ${selectedId===v.id?'active':''}" onclick="selectVersion(${v.id})">
+      <div class="version-item-header">
+        <span class="version-tag">${v.tag}</span>
+        <span class="version-badge ${v.status==='draft'?'badge-draft':'badge-published'}">${i18n[lang][v.status]}</span>
+      </div>
+      <div class="version-meta">${v.date} · ${v.author}</div>
+      <div class="version-desc">${v.desc}</div>
+    </div>
+  `).join('');
+}
+
+function selectVersion(id){
+  selectedId=id;
+  renderList();
+  renderDetail(id);
+}
+
+function renderDetail(id){
+  const v=versions.find(x=>x.id===id);
+  if(!v) return;
+  document.getElementById('emptyDetail').style.display='none';
+  document.getElementById('detailContent').style.display='block';
+  document.getElementById('headerActions').style.display='flex';
+  const publishBtn=document.getElementById('publishBtn');
+  publishBtn.style.display=v.status==='draft'?'inline-block':'none';
+
+  const diffHtml=v.diff.map(d=>{
+    const cls=d.type==='added'?'diff-added':d.type==='deleted'?'diff-deleted':'diff-modified';
+    const icon=d.type==='added'?'＋':d.type==='deleted'?'－':'～';
+    const label=i18n[lang][d.type];
+    return `<div class="diff-line ${cls}"><span class="diff-icon">${icon}</span><span class="diff-content"><span class="diff-node-id">[${label}]</span> ${d.text}</span></div>`;
+  }).join('');
+
+  document.getElementById('detailContent').innerHTML=`
+    <h2 style="font-size:22px;font-weight:700;margin-bottom:6px;">${v.tag}</h2>
+    <p style="font-size:14px;color:#64748b;margin-bottom:20px;">${v.desc}</p>
+    <div class="detail-info">
+      <div class="info-card"><div class="label">${i18n[lang].created}</div><div class="value">${v.date}</div></div>
+      <div class="info-card"><div class="label">${i18n[lang].author}</div><div class="value">${v.author}</div></div>
+      <div class="info-card"><div class="label">${i18n[lang].status}</div><div class="value"><span class="version-badge ${v.status==='draft'?'badge-draft':'badge-published'}">${i18n[lang][v.status]}</span></div></div>
+      <div class="info-card"><div class="label">${i18n[lang].nodes_count}</div><div class="value">${v.nodes}</div></div>
+    </div>
+    <div class="diff-section">
+      <h4>${i18n[lang].diff_changes}</h4>
+      ${diffHtml}
+    </div>
+  `;
+}
+
+function showRollbackModal(){document.getElementById('rollbackModal').classList.add('show');}
+function hideRollbackModal(){document.getElementById('rollbackModal').classList.remove('show');}
+function doRollback(){
+  hideRollbackModal();
+  alert(i18n[lang].rollback_success);
+}
+function publishVersion(){
+  if(!selectedId)return;
+  const v=versions.find(x=>x.id===selectedId);
+  if(v){v.status='published';renderList();renderDetail(selectedId);alert(i18n[lang].publish_success);}
+}
+function createVersion(){
+  const newTag='v'+(versions.length+1)+'.0';
+  versions.unshift({id:Date.now(),tag:newTag,date:new Date().toLocaleString('zh-CN'),author:'当前用户',status:'draft',desc:'新版本草稿',nodes:0,diff:[]});
+  renderList();
+}
+
+renderList();
+</script>
+</body>
+</html>

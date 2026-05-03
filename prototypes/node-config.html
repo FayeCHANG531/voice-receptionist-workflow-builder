@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>语流 VoiceFlow Builder — Node Configuration</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter','Noto Sans SC',sans-serif;background:#f8f9fa;color:#1e293b;display:flex;min-height:100vh;}
+.sidebar{width:240px;background:#1a1a2e;color:#e2e8f0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sidebar-logo{padding:20px 24px;font-size:18px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;}
+.sidebar-logo .logo-icon{width:32px;height:32px;background:#4f46e5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-group-label{padding:8px 24px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;color:#cbd5e1;text-decoration:none;font-size:14px;transition:all .15s;cursor:pointer;border-left:3px solid transparent;}
+.nav-item:hover{background:rgba(79,70,229,.1);color:#e2e8f0;}
+.nav-item.active{background:rgba(79,70,229,.15);color:#fff;border-left-color:#4f46e5;}
+.nav-item .icon{width:20px;text-align:center;font-size:16px;}
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{height:56px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:16px;font-weight:600;}
+.topbar-actions{display:flex;align-items:center;gap:12px;}
+.lang-btn{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:500;color:#475569;}
+.content{flex:1;padding:32px;}
+/* Node cards grid */
+.node-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:24px;}
+.node-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;cursor:pointer;transition:all .15s;text-align:center;}
+.node-card:hover{border-color:#4f46e5;box-shadow:0 2px 8px rgba(79,70,229,.08);transform:translateY(-1px);}
+.node-card.selected{border-color:#4f46e5;background:#eef2ff;}
+.node-card .nc-icon{font-size:28px;margin-bottom:8px;}
+.node-card .nc-name{font-size:13px;font-weight:600;color:#1e293b;}
+.node-card .nc-type{font-size:11px;color:#94a3b8;margin-top:2px;}
+/* Config panel */
+.config-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.config-panel{background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;}
+.config-header{padding:16px 24px;border-bottom:1px solid #e2e8f0;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+.config-body{padding:24px;max-height:calc(100vh - 260px);overflow-y:auto;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px;}
+.form-group label .required{color:#ef4444;margin-left:2px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;font-family:inherit;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.form-group textarea{min-height:80px;resize:vertical;}
+.form-group .error{border-color:#ef4444 !important;}
+.form-group .error-msg{font-size:12px;color:#ef4444;margin-top:4px;display:none;}
+.form-group .error-msg.show{display:block;}
+.form-row{display:flex;gap:16px;}
+.form-row .form-group{flex:1;}
+.btn-primary{background:#4f46e5;color:#fff;border:none;border-radius:6px;padding:9px 20px;font-size:13px;cursor:pointer;font-weight:500;}
+.btn-primary:hover{background:#4338ca;}
+.btn-outline{background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:9px 20px;font-size:13px;cursor:pointer;font-weight:500;color:#475569;}
+.btn-validate{background:#f59e0b;color:#fff;border:none;border-radius:6px;padding:9px 20px;font-size:13px;cursor:pointer;font-weight:500;}
+/* Preview panel */
+.preview-section{margin-top:16px;}
+.preview-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px;}
+.preview-header{font-size:14px;font-weight:600;margin-bottom:12px;color:#475569;}
+.preview-flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.preview-node{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;font-size:13px;text-align:center;min-width:80px;}
+.preview-node.active{border-color:#4f46e5;background:#eef2ff;color:#4338ca;font-weight:600;}
+.preview-node .pn-label{font-size:11px;color:#94a3b8;margin-bottom:2px;}
+.preview-arrow{color:#94a3b8;font-size:16px;}
+/* Call preview */
+.call-preview{background:#1e293b;border-radius:10px;padding:20px;margin-top:16px;color:#e2e8f0;}
+.call-preview .cp-label{font-size:11px;color:#94a3b8;margin-bottom:4px;}
+.call-preview .cp-msg{font-size:14px;line-height:1.6;margin-bottom:12px;}
+.call-preview .cp-msg.sys{color:#a5b4fc;}
+.call-preview .cp-msg.usr{color:#86efac;text-align:right;}
+.call-preview .cp-msg.err{color:#fca5a5;}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-logo"><div class="logo-icon">VF</div><span data-i18n="brand">语流 VoiceFlow</span></div>
+  <div class="sidebar-nav">
+    <div class="nav-group-label" data-i18n="nav_design">设计</div>
+    <a class="nav-item" href="canvas.html"><span class="icon">🎨</span><span data-i18n="nav_canvas">流程画布</span></a>
+    <a class="nav-item active" href="node-config.html"><span class="icon">🧩</span><span data-i18n="nav_nodes">节点配置</span></a>
+    <a class="nav-item" href="version.html"><span class="icon">📋</span><span data-i18n="nav_version">版本管理</span></a>
+    <div class="nav-group-label" data-i18n="nav_ops">运营</div>
+    <a class="nav-item" href="runtime.html"><span class="icon">⚡</span><span data-i18n="nav_runtime">运行管理</span></a>
+    <a class="nav-item" href="dashboard.html"><span class="icon">📊</span><span data-i18n="nav_dashboard">运营看板</span></a>
+    <a class="nav-item" href="simulation.html"><span class="icon">🧪</span><span data-i18n="nav_simulation">模拟测试</span></a>
+    <div class="nav-group-label" data-i18n="nav_telecom">通信</div>
+    <a class="nav-item" href="telephony.html"><span class="icon">📞</span><span data-i18n="nav_telephony">通信设置</span></a>
+    <a class="nav-item" href="numbers.html"><span class="icon">🔢</span><span data-i18n="nav_numbers">号码管理</span></a>
+  </div>
+</nav>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" data-i18n="page_title">节点配置</div>
+    <div class="topbar-actions"><button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button></div>
+  </div>
+  <div class="content">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:16px;" data-i18n="all_nodes">全部节点类型（19种）</h3>
+    <div class="node-grid" id="nodeGrid"></div>
+    <div class="config-layout" id="configArea" style="display:none;">
+      <div class="config-panel">
+        <div class="config-header"><span id="configTitle">节点配置</span><div><button class="btn-validate" onclick="validateForm()" data-i18n="validate">验证</button></div></div>
+        <div class="config-body" id="configBody"></div>
+        <div style="padding:0 24px 20px;display:flex;gap:8px;">
+          <button class="btn-primary" onclick="saveNode()" data-i18n="save">保存</button>
+          <button class="btn-outline" onclick="resetForm()" data-i18n="reset">重置</button>
+        </div>
+      </div>
+      <div class="config-panel">
+        <div class="config-header" data-i18n="preview_title">通话预览</div>
+        <div class="config-body" id="previewBody">
+          <div class="preview-section">
+            <div class="preview-header" data-i18n="flow_preview">流程预览</div>
+            <div class="preview-flow" id="previewFlow"></div>
+          </div>
+          <div class="call-preview" id="callPreview">
+            <div class="cp-label" data-i18n="call_sim">通话模拟</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const i18n={zh:{brand:"语流 VoiceFlow",nav_design:"设计",nav_ops:"运营",nav_telecom:"通信",nav_canvas:"流程画布",nav_nodes:"节点配置",nav_version:"版本管理",nav_runtime:"运行管理",nav_dashboard:"运营看板",nav_simulation:"模拟测试",nav_telephony:"通信设置",nav_numbers:"号码管理",page_title:"节点配置",all_nodes:"全部节点类型（19种）",validate:"验证",save:"保存",reset:"重置",preview_title:"通话预览",flow_preview:"流程预览",call_sim:"通话模拟",field_required:"此字段为必填项",validation_passed:"验证通过",validation_failed:"验证失败，请检查必填项",node_saved:"节点已保存"},en:{brand:"VoiceFlow",nav_design:"Design",nav_ops:"Operations",nav_telecom:"Telecom",nav_canvas:"Flow Canvas",nav_nodes:"Node Config",nav_version:"Versions",nav_runtime:"Runtime",nav_dashboard:"Dashboard",nav_simulation:"Simulation",nav_telephony:"Telephony",nav_numbers:"Numbers",page_title:"Node Configuration",all_nodes:"All Node Types (19)",validate:"Validate",save:"Save",reset:"Reset",preview_title:"Call Preview",flow_preview:"Flow Preview",call_sim:"Call Simulation",field_required:"This field is required",validation_passed:"Validation passed",validation_failed:"Validation failed, check required fields",node_saved:"Node saved"}};
+let lang='zh';
+
+const nodeTypes=[
+  {id:'start',icon:'▶️',name:'开始节点',nameEn:'Start',category:'flow'},
+  {id:'end',icon:'⏹️',name:'结束节点',nameEn:'End',category:'flow'},
+  {id:'greeting',icon:'👋',name:'欢迎语节点',nameEn:'Greeting',category:'voice'},
+  {id:'ivr_menu',icon:'🔀',name:'IVR菜单节点',nameEn:'IVR Menu',category:'voice'},
+  {id:'asr',icon:'🎤',name:'语音识别节点',nameEn:'ASR',category:'voice'},
+  {id:'tts',icon:'🔊',name:'语音合成节点',nameEn:'TTS',category:'voice'},
+  {id:'keyword',icon:'🔑',name:'关键词匹配节点',nameEn:'Keyword Match',category:'logic'},
+  {id:'intent',icon:'🧠',name:'意图识别节点',nameEn:'Intent',category:'logic'},
+  {id:'condition',icon:'⚙️',name:'条件分支节点',nameEn:'Condition',category:'logic'},
+  {id:'transfer',icon:'📞',name:'转人工节点',nameEn:'Transfer',category:'action'},
+  {id:'voicemail',icon:'💬',name:'留言节点',nameEn:'Voicemail',category:'action'},
+  {id:'sms',icon:'📱',name:'发送短信节点',nameEn:'Send SMS',category:'action'},
+  {id:'query',icon:'🔍',name:'数据查询节点',nameEn:'Data Query',category:'data'},
+  {id:'assign',icon:'📝',name:'变量赋值节点',nameEn:'Assign Variable',category:'data'},
+  {id:'http',icon:'🌐',name:'HTTP请求节点',nameEn:'HTTP Request',category:'data'},
+  {id:'delay',icon:'⏱️',name:'延时节点',nameEn:'Delay',category:'flow'},
+  {id:'loop',icon:'🔄',name:'循环节点',nameEn:'Loop',category:'logic'},
+  {id:'subflow',icon:'📦',name:'子流程节点',nameEn:'Sub Flow',category:'flow'},
+  {id:'record',icon:'🎙️',name:'录音节点',nameEn:'Record',category:'voice'}
+];
+
+const nodeFields={
+  start:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：开始',placeholderEn:'e.g. Start'},
+         {key:'trigger',label:'触发方式',labelEn:'Trigger',type:'select',required:true,options:['来电触发','定时触发','API触发'],optionsEn:['Incoming Call','Scheduled','API']},
+         {key:'timeout',label:'超时时间(秒)',labelEn:'Timeout(s)',type:'number',required:false,placeholder:'30',placeholderEn:'30'}],
+  end:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：结束',placeholderEn:'e.g. End'},
+       {key:'endType',label:'结束类型',labelEn:'End Type',type:'select',required:true,options:['正常挂断','转接后挂断','超时挂断'],optionsEn:['Normal','After Transfer','Timeout']},
+       {key:'endMsg',label:'结束语音',labelEn:'End Message',type:'textarea',required:false,placeholder:'感谢您的来电，再见！',placeholderEn:'Thank you for calling, goodbye!'}],
+  greeting:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：欢迎语',placeholderEn:'e.g. Greeting'},
+            {key:'audioType',label:'语音来源',labelEn:'Audio Source',type:'select',required:true,options:['TTS合成','录音文件','流式合成'],optionsEn:['TTS','Audio File','Streaming TTS']},
+            {key:'content',label:'欢迎语内容',labelEn:'Greeting Content',type:'textarea',required:true,placeholder:'您好，欢迎致电...',placeholderEn:'Hello, welcome to...'},
+            {key:'voice',label:'语音角色',labelEn:'Voice',type:'select',required:false,options:['女声-小云','男声-大智','女声-英式'],optionsEn:['Female-Xiaoyun','Male-Dazhi','Female-British']},
+            {key:'speed',label:'语速(0.5-2.0)',labelEn:'Speed',type:'number',required:false,placeholder:'1.0',placeholderEn:'1.0'}],
+  ivr_menu:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：IVR主菜单',placeholderEn:'e.g. Main Menu'},
+            {key:'prompt',label:'菜单提示语',labelEn:'Menu Prompt',type:'textarea',required:true,placeholder:'按1进入...',placeholderEn:'Press 1 for...'},
+            {key:'options',label:'菜单选项',labelEn:'Menu Options',type:'textarea',required:true,placeholder:'1=售前咨询\n2=售后服务\n3=转人工',placeholderEn:'1=Sales\n2=Support\n3=Agent'},
+            {key:'retryCount',label:'重试次数',labelEn:'Retry Count',type:'number',required:false,placeholder:'3',placeholderEn:'3'},
+            {key:'invalidMsg',label:'无效输入提示',labelEn:'Invalid Input Msg',type:'textarea',required:false,placeholder:'输入无效，请重新输入',placeholderEn:'Invalid input, please try again'}],
+  asr:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：语音识别',placeholderEn:'e.g. ASR'},
+       {key:'prompt',label:'提示语',labelEn:'Prompt',type:'textarea',required:true,placeholder:'请说出您的需求',placeholderEn:'Please state your request'},
+       {key:'lang',label:'识别语言',labelEn:'Language',type:'select',required:true,options:['中文普通话','中文粤语','英语','日语'],optionsEn:['Mandarin','Cantonese','English','Japanese']},
+       {key:'maxDuration',label:'最长录音(秒)',labelEn:'Max Duration(s)',type:'number',required:false,placeholder:'10',placeholderEn:'10'},
+       {key:'silenceTimeout',label:'静音超时(秒)',labelEn:'Silence Timeout(s)',type:'number',required:false,placeholder:'3',placeholderEn:'3'}],
+  tts:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：播报语音',placeholderEn:'e.g. Announce'},
+       {key:'content',label:'播报内容',labelEn:'Content',type:'textarea',required:true,placeholder:'您的订单号为...',placeholderEn:'Your order number is...'},
+       {key:'voice',label:'语音角色',labelEn:'Voice',type:'select',required:false,options:['女声-小云','男声-大智'],optionsEn:['Female-Xiaoyun','Male-Dazhi']},
+       {key:'interrupt',label:'允许打断',labelEn:'Allow Barge-in',type:'select',required:false,options:['是','否'],optionsEn:['Yes','No']}],
+  keyword:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：关键词匹配',placeholderEn:'e.g. Keyword Match'},
+           {key:'keywords',label:'关键词列表',labelEn:'Keywords',type:'textarea',required:true,placeholder:'退货,退款,退换\n投诉,举报\n咨询,询问',placeholderEn:'return,refund\ncomplaint\ninquiry'},
+           {key:'matchMode',label:'匹配模式',labelEn:'Match Mode',type:'select',required:true,options:['精确匹配','模糊匹配','正则匹配'],optionsEn:['Exact','Fuzzy','Regex']},
+           {key:'noMatchAction',label:'未匹配动作',labelEn:'No Match Action',type:'select',required:false,options:['重试','跳转默认','转人工'],optionsEn:['Retry','Default','Transfer']}],
+  intent:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：意图识别',placeholderEn:'e.g. Intent'},
+          {key:'modelId',label:'模型ID',labelEn:'Model ID',type:'text',required:true,placeholder:'intent-model-001',placeholderEn:'intent-model-001'},
+          {key:'threshold',label:'置信度阈值',labelEn:'Confidence Threshold',type:'number',required:false,placeholder:'0.7',placeholderEn:'0.7'},
+          {key:'fallback',label:'低置信度动作',labelEn:'Fallback Action',type:'select',required:false,options:['转人工','重试','默认回复'],optionsEn:['Transfer','Retry','Default Reply']}],
+  condition:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：条件判断',placeholderEn:'e.g. Condition'},
+             {key:'variable',label:'判断变量',labelEn:'Variable',type:'text',required:true,placeholder:'${user_input}',placeholderEn:'${user_input}'},
+             {key:'operator',label:'运算符',labelEn:'Operator',type:'select',required:true,options:['等于','不等于','包含','大于','小于','正则匹配'],optionsEn:['Equals','Not Equals','Contains','Greater Than','Less Than','Regex']},
+             {key:'value',label:'比较值',labelEn:'Compare Value',type:'text',required:true,placeholder:'',placeholderEn:''}],
+  transfer:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：转人工',placeholderEn:'e.g. Transfer'},
+            {key:'transferType',label:'转接类型',labelEn:'Transfer Type',type:'select',required:true,options:['指定座席','技能组','随机分配'],optionsEn:['Specific Agent','Skill Group','Random']},
+            {key:'target',label:'转接目标',labelEn:'Target',type:'text',required:true,placeholder:'skill-group-001',placeholderEn:'skill-group-001'},
+            {key:'timeout',label:'转接超时(秒)',labelEn:'Timeout(s)',type:'number',required:false,placeholder:'30',placeholderEn:'30'},
+            {key:'holdMusic',label:'等待音乐',labelEn:'Hold Music',type:'select',required:false,options:['默认音乐','自定义上传'],optionsEn:['Default','Custom Upload']}],
+  voicemail:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：留言',placeholderEn:'e.g. Voicemail'},
+             {key:'prompt',label:'留言提示语',labelEn:'Prompt',type:'textarea',required:true,placeholder:'请在嘀声后留言...',placeholderEn:'Please leave a message after...'},
+             {key:'maxDuration',label:'最长留言(秒)',labelEn:'Max Duration(s)',type:'number',required:false,placeholder:'60',placeholderEn:'60'},
+             {key:'notifyEmail',label:'通知邮箱',labelEn:'Notify Email',type:'text',required:false,placeholder:'admin@example.com',placeholderEn:'admin@example.com'}],
+  sms:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：发送短信',placeholderEn:'e.g. Send SMS'},
+       {key:'templateId',label:'短信模板ID',labelEn:'Template ID',type:'text',required:true,placeholder:'SMS_TPL_001',placeholderEn:'SMS_TPL_001'},
+       {key:'params',label:'模板参数',labelEn:'Template Params',type:'textarea',required:false,placeholder:'{"code":"1234"}',placeholderEn:'{"code":"1234"}'}],
+  query:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：数据查询',placeholderEn:'e.g. Data Query'},
+         {key:'dataSource',label:'数据源',labelEn:'Data Source',type:'select',required:true,options:['CRM系统','订单系统','自定义API'],optionsEn:['CRM','Orders','Custom API']},
+         {key:'queryField',label:'查询字段',labelEn:'Query Field',type:'text',required:true,placeholder:'phone_number',placeholderEn:'phone_number'},
+         {key:'outputVar',label:'输出变量',labelEn:'Output Variable',type:'text',required:true,placeholder:'${customer_info}',placeholderEn:'${customer_info}'}],
+  assign:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：赋值',placeholderEn:'e.g. Assign'},
+          {key:'variable',label:'变量名',labelEn:'Variable',type:'text',required:true,placeholder:'retry_count',placeholderEn:'retry_count'},
+          {key:'expression',label:'表达式',labelEn:'Expression',type:'text',required:true,placeholder:'${retry_count} + 1',placeholderEn:'${retry_count} + 1'}],
+  http:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：HTTP请求',placeholderEn:'e.g. HTTP Request'},
+        {key:'url',label:'请求URL',labelEn:'URL',type:'text',required:true,placeholder:'https://api.example.com/data',placeholderEn:'https://api.example.com/data'},
+        {key:'method',label:'请求方法',labelEn:'Method',type:'select',required:true,options:['GET','POST','PUT','DELETE'],optionsEn:['GET','POST','PUT','DELETE']},
+        {key:'headers',label:'请求头',labelEn:'Headers',type:'textarea',required:false,placeholder:'{"Authorization":"Bearer xxx"}',placeholderEn:'{"Authorization":"Bearer xxx"}'},
+        {key:'body',label:'请求体',labelEn:'Body',type:'textarea',required:false,placeholder:'{"query":"${user_input}"}',placeholderEn:'{"query":"${user_input}"}'}],
+  delay:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：延时',placeholderEn:'e.g. Delay'},
+         {key:'duration',label:'延时(秒)',labelEn:'Duration(s)',type:'number',required:true,placeholder:'3',placeholderEn:'3'}],
+  loop:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：循环',placeholderEn:'e.g. Loop'},
+        {key:'maxIterations',label:'最大循环次数',labelEn:'Max Iterations',type:'number',required:true,placeholder:'3',placeholderEn:'3'},
+        {key:'exitCondition',label:'退出条件',labelEn:'Exit Condition',type:'text',required:true,placeholder:'${resolved} == true',placeholderEn:'${resolved} == true'}],
+  subflow:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：子流程',placeholderEn:'e.g. Sub Flow'},
+           {key:'flowId',label:'子流程ID',labelEn:'Flow ID',type:'text',required:true,placeholder:'flow售后处理',placeholderEn:'flow-support'},
+           {key:'passVars',label:'传入变量',labelEn:'Pass Variables',type:'textarea',required:false,placeholder:'{"order_id":"${order_id}"}',placeholderEn:'{"order_id":"${order_id}"}'}],
+  record:[{key:'name',label:'节点名称',labelEn:'Node Name',type:'text',required:true,placeholder:'如：录音',placeholderEn:'e.g. Record'},
+          {key:'duration',label:'录音时长(秒)',labelEn:'Duration(s)',type:'number',required:true,placeholder:'30',placeholderEn:'30'},
+          {key:'beep',label:'提示音',labelEn:'Beep',type:'select',required:false,options:['播放','不播放'],optionsEn:['Play','None']},
+          {key:'format',label:'录音格式',labelEn:'Format',type:'select',required:false,options:['WAV','MP3','OGG'],optionsEn:['WAV','MP3','OGG']}]
+};
+
+let selectedNode=null;
+
+function toggleLang(){lang=lang==='zh'?'en':'zh';document.getElementById('langBtn').textContent=lang==='zh'?'EN':'中';document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(i18n[lang][k])el.textContent=i18n[lang][k];});renderGrid();if(selectedNode)renderConfig(selectedNode);}
+
+function renderGrid(){
+  document.getElementById('nodeGrid').innerHTML=nodeTypes.map(n=>`
+    <div class="node-card ${selectedNode===n.id?'selected':''}" onclick="selectNode('${n.id}')">
+      <div class="nc-icon">${n.icon}</div>
+      <div class="nc-name">${lang==='zh'?n.name:n.nameEn}</div>
+      <div class="nc-type">${n.category}</div>
+    </div>`).join('');
+}
+
+function selectNode(id){
+  selectedNode=id;
+  renderGrid();
+  renderConfig(id);
+}
+
+function renderConfig(id){
+  document.getElementById('configArea').style.display='grid';
+  const nt=nodeTypes.find(n=>n.id===id);
+  const fields=nodeFields[id]||[];
+  document.getElementById('configTitle').textContent=lang==='zh'?nt.name:nt.nameEn;
+
+  let html='';
+  fields.forEach(f=>{
+    const isReq=f.required;
+    const lbl=lang==='zh'?f.label:f.labelEn;
+    const ph=lang==='zh'?f.placeholder:f.placeholderEn;
+    const reqMark=isReq?'<span class="required">*</span>':'';
+    if(f.type==='textarea'){
+      html+=`<div class="form-group"><label>${lbl}${reqMark}</label><textarea id="field_${f.key}" placeholder="${ph||''}" data-required="${isReq}"></textarea><div class="error-msg" id="err_${f.key}">${i18n[lang].field_required}</div></div>`;
+    }else if(f.type==='select'){
+      const opts=(lang==='en'&&f.optionsEn)?f.optionsEn:f.options;
+      html+=`<div class="form-group"><label>${lbl}${reqMark}</label><select id="field_${f.key}" data-required="${isReq}">${opts.map(o=>`<option>${o}</option>`).join('')}</select><div class="error-msg" id="err_${f.key}">${i18n[lang].field_required}</div></div>`;
+    }else{
+      html+=`<div class="form-group"><label>${lbl}${reqMark}</label><input type="${f.type}" id="field_${f.key}" placeholder="${ph||''}" data-required="${isReq}"><div class="error-msg" id="err_${f.key}">${i18n[lang].field_required}</div></div>`;
+    }
+  });
+  document.getElementById('configBody').innerHTML=html;
+  renderPreview(id);
+}
+
+function renderPreview(id){
+  const nt=nodeTypes.find(n=>n.id===id);
+  // Flow preview
+  const flowSteps=[
+    {label:'开始',active:false},{label:'欢迎语',active:false},
+    {label:lang==='zh'?nt.name:nt.nameEn,active:true},
+    {label:'条件判断',active:false},{label:'结束',active:false}
+  ];
+  document.getElementById('previewFlow').innerHTML=flowSteps.map((s,i)=>`
+    ${i>0?'<span class="preview-arrow">→</span>':''}
+    <div class="preview-node ${s.active?'active':''}"><div class="pn-label">${s.label}</div></div>
+  `).join('');
+
+  // Call preview
+  const previews={
+    greeting:'<div class="cp-msg sys">[系统] 您好，欢迎致电语流科技，请问有什么可以帮您？</div><div class="cp-msg usr">[用户] 我想咨询一下</div>',
+    ivr_menu:'<div class="cp-msg sys">[系统] 按1进入售前咨询，按2进入售后服务，按3转人工</div><div class="cp-msg usr">[用户] 按2</div><div class="cp-msg sys">[系统] 好的，正在为您转接售后服务...</div>',
+    asr:'<div class="cp-msg sys">[系统] 请说出您的需求</div><div class="cp-msg usr">[用户] 我想退货</div><div class="cp-msg sys">[系统] 识别结果：退货</div>',
+    keyword:'<div class="cp-msg sys">[系统] 正在分析您的输入...</div><div class="cp-msg sys">[系统] 匹配到关键词"退货"，跳转退货流程</div>',
+    transfer:'<div class="cp-msg sys">[系统] 正在为您转接人工客服，请稍候...</div><div class="cp-msg sys">[系统] 播放等待音乐 ♪</div><div class="cp-msg sys">[系统] 已接通，客服-小王为您服务</div>',
+    end:'<div class="cp-msg sys">[系统] 感谢您的来电，再见！</div><div class="cp-msg usr">[用户] 挂断</div>'
+  };
+  const preview=previews[id]||`<div class="cp-msg sys">[系统] ${lang==='zh'?nt.name:nt.nameEn}节点执行中...</div>`;
+  document.getElementById('callPreview').innerHTML=`<div class="cp-label">${i18n[lang].call_sim}</div>${preview}`;
+}
+
+function validateForm(){
+  let valid=true;
+  document.querySelectorAll('#configBody [data-required="true"]').forEach(el=>{
+    const key=el.id.replace('field_','');
+    const errEl=document.getElementById('err_'+key);
+    if(!el.value.trim()){
+      el.classList.add('error');
+      errEl.classList.add('show');
+      valid=false;
+    }else{
+      el.classList.remove('error');
+      errEl.classList.remove('show');
+    }
+  });
+  if(!valid){
+    // Show error state in call preview
+    document.getElementById('callPreview').innerHTML+=`<div class="cp-msg err">[错误] ${i18n[lang].validation_failed}</div>`;
+  }
+  alert(valid?i18n[lang].validation_passed:i18n[lang].validation_failed);
+}
+
+function saveNode(){alert(i18n[lang].node_saved);}
+function resetForm(){if(selectedNode)renderConfig(selectedNode);}
+
+renderGrid();
+</script>
+</body>
+</html>
