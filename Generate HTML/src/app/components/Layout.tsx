@@ -96,7 +96,7 @@ export function Layout() {
         {/* Top bar */}
         <header className="flex items-center justify-between px-5 h-14 flex-shrink-0 bg-white border-b border-gray-200">
           <div className="flex items-center gap-1.5" style={{ color: '#6b7280', fontSize: '13px' }}>
-            <span>AI接待员</span>
+            <span>{t('AI接待员', 'AI Receptionist')}</span>
             <ChevronRight size={14} />
             <span style={{ color: '#111827' }}>{t(currentItem?.zh ?? '', currentItem?.en ?? '')}</span>
           </div>

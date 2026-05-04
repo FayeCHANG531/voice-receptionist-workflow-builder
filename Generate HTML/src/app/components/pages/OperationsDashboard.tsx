@@ -140,7 +140,7 @@ export default function OperationsDashboard() {
           <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', marginBottom: 12 }}>
             {t('节点通过率热力图', 'Node Pass Rate Heatmap')}
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {heatmapNodes.map(node => {
               const style = getHeatColor(node.rate);
               return (
@@ -210,15 +210,14 @@ export default function OperationsDashboard() {
           <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', marginBottom: 12 }}>
             {t('异常统计', 'Exception Stats')}
           </p>
-          <div className="flex items-center gap-4 mb-4 p-3 rounded-lg" style={{ background: '#fef2f2' }}>
-            <div>
-              <p style={{ fontSize: '28px', fontWeight: 700, color: '#dc2626', lineHeight: 1 }}>7.2%</p>
-              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: 2 }}>{t('异常通话占比', 'Exception Rate')}</p>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="text-center p-3 rounded-lg" style={{ background: '#fef2f2' }}>
+              <p style={{ fontSize: '24px', fontWeight: 700, color: '#dc2626', lineHeight: 1 }}>7.2%</p>
+              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: 4 }}>{t('异常率', 'Exception Rate')}</p>
             </div>
-            <div style={{ height: 40, width: 1, background: '#fca5a5' }} />
-            <div>
-              <p style={{ fontSize: '28px', fontWeight: 700, color: '#dc2626', lineHeight: 1 }}>92</p>
-              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: 2 }}>{t('异常总数', 'Total Exceptions')}</p>
+            <div className="text-center p-3 rounded-lg" style={{ background: '#fffbeb' }}>
+              <p style={{ fontSize: '24px', fontWeight: 700, color: '#d97706', lineHeight: 1 }}>92</p>
+              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: 4 }}>{t('异常数', 'Anomaly Count')}</p>
             </div>
           </div>
           <div className="space-y-2">

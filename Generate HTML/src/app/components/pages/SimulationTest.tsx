@@ -3,59 +3,65 @@ import { useLang } from '../../contexts/LanguageContext';
 import {
   Send, Phone, PhoneOff, MessageSquare, HelpCircle,
   GitBranch, Zap, CheckCircle, Clock, AlertCircle,
-  ChevronDown, Mic, Volume2, Play
+  ChevronDown, Mic, Volume2, Play, ArrowRight, RotateCcw, Trash2, Download
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ChatMessage {
   id: string;
   role: 'ai' | 'user';
-  content: string;
+  contentZh: string;
+  contentEn: string;
   time: string;
   nodeId?: string;
+  nodeTagZh?: string;
+  nodeTagEn?: string;
+  highlight?: boolean;
 }
 
 const initialMessages: ChatMessage[] = [
-  { id: 'm1', role: 'ai', content: '您好！感谢您致电VoiceFlow AI接待服务，请问有什么可以帮助您？', time: '10:23:01', nodeId: 'n1' },
-  { id: 'm2', role: 'user', content: '你好，我想预约下周三的理发服务', time: '10:23:15' },
-  { id: 'm3', role: 'ai', content: '好的！请问您是我们的会员吗？如果是，请告知您的会员号码。', time: '10:23:18', nodeId: 'n2' },
-  { id: 'm4', role: 'user', content: '是的，我的会员号是 VIP12345', time: '10:23:35' },
-  { id: 'm5', role: 'ai', content: '已成功验证您的会员身份，张先生。请问下周三哪个时间段您方便？', time: '10:23:38', nodeId: 'n3' },
+  { id: 'm1', role: 'ai', contentZh: '您好！感谢您致电VoiceFlow AI接待服务，请问有什么可以帮助您？', contentEn: 'Hello! Thank you for calling VoiceFlow AI. How can I help you?', time: '10:23:01', nodeId: 'n1', nodeTagZh: '欢迎语', nodeTagEn: 'Welcome' },
+  { id: 'm2', role: 'user', contentZh: '你好，我想预约下周三的理发服务', contentEn: 'Hi, I would like to book a haircut for next Wednesday', time: '10:23:15' },
+  { id: 'm3', role: 'ai', contentZh: '好的！请问您是我们的会员吗？如果是，请告知您的会员号码。', contentEn: 'Sure! Are you a member? If so, please provide your membership number.', time: '10:23:18', nodeId: 'n2', nodeTagZh: '身份验证', nodeTagEn: 'ID Verify' },
+  { id: 'm4', role: 'user', contentZh: '是的，我的会员号是 VIP12345', contentEn: 'Yes, my membership number is VIP12345', time: '10:23:35' },
+  { id: 'm5', role: 'ai', contentZh: '已成功验证您的会员身份，张先生。请问下周三哪个时间段您方便？', contentEn: 'Your membership has been verified, Mr. Zhang. What time next Wednesday works for you?', time: '10:23:38', nodeId: 'n3', nodeTagZh: '意图判断', nodeTagEn: 'Intent Analysis' },
+  { id: 'm6', role: 'ai', contentZh: '已检测到关键词"预约"，跳转至预约服务流程', contentEn: 'Keyword "booking" detected, routing to booking service', time: '10:23:39', nodeId: 'n3', nodeTagZh: '关键词匹配', nodeTagEn: 'Keyword Match', highlight: true },
 ];
 
 const executedNodes = [
-  { id: 'n1', type: 'greeting', label: '问候语', labelEn: 'Greeting', status: 'completed', time: '10:23:01' },
-  { id: 'n2', type: 'question', label: '身份验证', labelEn: 'Identity Verification', status: 'completed', time: '10:23:18' },
-  { id: 'n3', type: 'branch', label: '意图判断', labelEn: 'Intent Analysis', status: 'active', time: '10:23:38' },
-  { id: 'n4', type: 'action', label: '预约服务', labelEn: 'Booking Service', status: 'pending', time: '' },
-  { id: 'n5', type: 'end', label: '结束', labelEn: 'End', status: 'pending', time: '' },
+  { id: 'n1', type: 'greeting', labelZh: '问候语', labelEn: 'Greeting', detailZh: 'greeting_01 · 输出语音提示', detailEn: 'greeting_01 · Play voice prompt', status: 'completed', time: '10:23:01' },
+  { id: 'n2', type: 'question', labelZh: '身份验证', labelEn: 'ID Verification', detailZh: 'verify_01 · 等待会员号输入', detailEn: 'verify_01 · Awaiting membership ID', status: 'completed', time: '10:23:18' },
+  { id: 'n3', type: 'branch', labelZh: '意图判断', labelEn: 'Intent Analysis', detailZh: 'intent_01 · 识别关键词', detailEn: 'intent_01 · Keyword detection', status: 'completed', time: '10:23:38' },
+  { id: 'n4', type: 'api', labelZh: '预约服务', labelEn: 'Booking Service', detailZh: 'booking_01 · 查询可预约时段', detailEn: 'booking_01 · Query available slots', status: 'active', time: '10:23:45' },
+  { id: 'n5', type: 'endCall', labelZh: '结束', labelEn: 'End', detailZh: 'end_01 · 挂断并记录', detailEn: 'end_01 · Hang up & log', status: 'pending', time: '' },
 ];
 
 const nodeIconMap: Record<string, React.ElementType> = {
   greeting: MessageSquare,
   question: HelpCircle,
   branch: GitBranch,
-  action: Zap,
+  api: Zap,
   wait: Clock,
-  end: CheckCircle,
+  endCall: CheckCircle,
 };
 
 const nodeColorMap: Record<string, string> = {
   greeting: '#4f46e5',
   question: '#2563eb',
   branch: '#d97706',
-  action: '#7c3aed',
+  api: '#7c3aed',
   wait: '#6b7280',
-  end: '#16a34a',
+  endCall: '#16a34a',
 };
 
 const flows = [
-  { id: 'f1', name: '客服接待流程 v2 (当前)' },
-  { id: 'f2', name: '预约服务流程 v1' },
-  { id: 'f3', name: '投诉处理流程 v1' },
+  { id: 'f1', nameZh: '客服接待流程 v2 (当前)', nameEn: 'Customer Service Flow v2 (Current)' },
+  { id: 'f2', nameZh: '预约服务流程 v1', nameEn: 'Booking Service Flow v1' },
+  { id: 'f3', nameZh: '投诉处理流程 v1', nameEn: 'Complaint Handling Flow v1' },
 ];
 
 export default function SimulationTest() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [mode, setMode] = useState<'text' | 'live'>('text');
   const [selectedFlow, setSelectedFlow] = useState('f1');
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
@@ -63,6 +69,8 @@ export default function SimulationTest() {
   const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'active' | 'ended'>('idle');
   const [callDuration, setCallDuration] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const timeLocale = lang === 'zh' ? 'zh-CN' : 'en-US';
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -81,21 +89,52 @@ export default function SimulationTest() {
     const userMsg: ChatMessage = {
       id: `m${Date.now()}`,
       role: 'user',
-      content: inputVal,
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      contentZh: inputVal,
+      contentEn: inputVal,
+      time: new Date().toLocaleTimeString(timeLocale, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     };
     setMessages(msgs => [...msgs, userMsg]);
     setInputVal('');
     setTimeout(() => {
+      const nodeTags = [
+        { zh: '预约确认', en: 'Booking Confirm' },
+        { zh: 'AI助手', en: 'AI Assistant' },
+        { zh: '信息查询', en: 'Info Query' },
+        { zh: '对话节点', en: 'Dialog' },
+      ];
+      const tag = nodeTags[Math.floor(Math.random() * nodeTags.length)];
       const aiMsg: ChatMessage = {
         id: `m${Date.now()}`,
         role: 'ai',
-        content: '好的，我帮您预约下周三上午10点。请问您有其他需要吗？',
-        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        contentZh: '好的，我帮您预约下周三上午10点。请问您有其他需要吗？',
+        contentEn: "Sure, I've booked next Wednesday at 10 AM. Anything else?",
+        time: new Date().toLocaleTimeString(timeLocale, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         nodeId: 'n4',
+        nodeTagZh: tag.zh,
+        nodeTagEn: tag.en,
       };
       setMessages(msgs => [...msgs, aiMsg]);
     }, 1000);
+  };
+
+  const resetChat = () => {
+    setMessages(initialMessages);
+    setInputVal('');
+    toast(t('对话已重置', 'Chat reset'));
+  };
+
+  const clearChat = () => {
+    setMessages([]);
+    setInputVal('');
+    toast(t('对话已清空', 'Chat cleared'));
+  };
+
+  const exportTranscript = () => {
+    const text = messages.map(m =>
+      `[${m.time}] ${m.role === 'ai' ? 'AI' : 'User'}: ${t(m.contentZh, m.contentEn)}`
+    ).join('\n');
+    navigator.clipboard.writeText(text).catch(() => {});
+    toast.success(t('对话记录已复制', 'Transcript copied to clipboard'));
   };
 
   const startCall = () => {
@@ -143,7 +182,7 @@ export default function SimulationTest() {
               className="appearance-none pl-3 pr-8 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500 bg-white"
               style={{ fontSize: '13px', color: '#374151' }}
             >
-              {flows.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+              {flows.map(f => <option key={f.id} value={f.id}>{t(f.nameZh, f.nameEn)}</option>)}
             </select>
             <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" color="#6b7280" />
           </div>
@@ -158,26 +197,46 @@ export default function SimulationTest() {
             <>
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-5 space-y-3" style={{ background: '#f8f9fa' }}>
+                {/* Chat actions */}
+                {messages.length > 0 && (
+                  <div className="flex items-center justify-end gap-1.5 mb-2">
+                    <button onClick={resetChat} className="flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-gray-200" style={{ color: '#6b7280' }} title={t('重置为初始对话', 'Reset to initial')}>
+                      <RotateCcw size={11} />{t('重置', 'Reset')}
+                    </button>
+                    <button onClick={clearChat} className="flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-red-50" style={{ color: '#ef4444' }} title={t('清空所有对话', 'Clear all')}>
+                      <Trash2 size={11} />{t('清空', 'Clear')}
+                    </button>
+                    <button onClick={exportTranscript} className="flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-gray-200" style={{ color: '#6b7280' }} title={t('导出对话', 'Export transcript')}>
+                      <Download size={11} />{t('导出', 'Export')}
+                    </button>
+                  </div>
+                )}
                 {messages.map(msg => (
                   <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div style={{ maxWidth: '70%' }}>
                       {msg.role === 'ai' && (
                         <div className="flex items-center gap-1.5 mb-1">
                           <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs" style={{ background: '#4f46e5' }}>AI</div>
+                          {(msg.nodeTagZh || msg.nodeTagEn) && (
+                            <span className="px-1.5 py-px rounded text-white font-semibold" style={{ fontSize: '10px', background: '#4f46e5' }}>
+                              {t(msg.nodeTagZh || '', msg.nodeTagEn || '')}
+                            </span>
+                          )}
                           <span style={{ fontSize: '11px', color: '#9ca3af' }}>{msg.time}</span>
                         </div>
                       )}
                       <div
                         className="px-3 py-2 rounded-lg"
                         style={{
-                          background: msg.role === 'ai' ? '#fff' : '#4f46e5',
-                          color: msg.role === 'ai' ? '#1f2937' : '#fff',
-                          border: msg.role === 'ai' ? '1px solid #e5e7eb' : 'none',
+                          background: msg.highlight ? '#dcfce7' : msg.role === 'ai' ? '#fff' : '#4f46e5',
+                          color: msg.highlight ? '#166534' : msg.role === 'ai' ? '#1f2937' : '#fff',
+                          border: msg.highlight ? 'none' : msg.role === 'ai' ? '1px solid #e5e7eb' : 'none',
+                          borderLeft: msg.highlight ? '3px solid #22c55e' : undefined,
                           fontSize: '13px',
                           lineHeight: '1.5',
                         }}
                       >
-                        {msg.content}
+                        {t(msg.contentZh, msg.contentEn)}
                       </div>
                       {msg.role === 'user' && (
                         <div className="text-right mt-1">
@@ -264,8 +323,23 @@ export default function SimulationTest() {
               )}
 
               {callStatus === 'ended' && (
-                <div className="w-full max-w-md space-y-4">
+                <div className="w-full max-w-md space-y-3">
                   <p style={{ fontSize: '16px', fontWeight: 600, color: '#111827', textAlign: 'center' }}>{t('通话结束', 'Call Ended')}</p>
+                  {/* Stats grid */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: t('通话时长', 'Duration'), value: `1m ${callDuration}s` },
+                      { label: t('经过节点', 'Nodes'), value: '5' },
+                      { label: t('平均延迟', 'Avg Latency'), value: '142ms' },
+                      { label: t('识别准确率', 'ASR Accuracy'), value: '96.5%' },
+                    ].map(stat => (
+                      <div key={stat.label} className="bg-white rounded-lg border border-gray-200 p-3">
+                        <p style={{ fontSize: '11px', color: '#9ca3af', marginBottom: 4 }}>{stat.label}</p>
+                        <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>{stat.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Recording */}
                   <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-100" style={{ fontSize: '13px', fontWeight: 600 }}>{t('通话录音', 'Recording')}</div>
                     <div className="px-4 py-3">
@@ -274,20 +348,40 @@ export default function SimulationTest() {
                           <Play size={14} color="#4f46e5" />
                         </button>
                         <div className="flex-1 h-1.5 bg-gray-100 rounded-full">
-                          <div className="w-2/3 h-full rounded-full" style={{ background: '#4f46e5' }} />
+                          <div className="h-full rounded-full" style={{ width: '45%', background: '#4f46e5' }} />
                         </div>
-                        <span style={{ fontSize: '12px', color: '#6b7280' }}>1:24</span>
+                        <span style={{ fontSize: '12px', color: '#6b7280' }}>0:42 / 1:{callDuration}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="bg-white rounded-lg border border-gray-200">
-                    <div className="px-4 py-3 border-b border-gray-100" style={{ fontSize: '13px', fontWeight: 600 }}>{t('延迟统计', 'Latency Stats')}</div>
-                    <div className="px-4 py-3 grid grid-cols-3 gap-4">
-                      {[['ASR', '180ms'], ['LLM', '420ms'], ['TTS', '95ms']].map(([k, v]) => (
-                        <div key={k} className="text-center">
-                          <p style={{ fontSize: '11px', color: '#6b7280' }}>{k}</p>
-                          <p style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>{v}</p>
-                        </div>
+                  {/* Transcript */}
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100" style={{ fontSize: '13px', fontWeight: 600 }}>{t('通话转写', 'Transcript')}</div>
+                    <div className="px-4 py-3 space-y-1.5" style={{ fontSize: '12px', lineHeight: 1.7, color: '#475569' }}>
+                      <div><strong style={{ color: '#4f46e5' }}>{t('[系统]', '[System]')}</strong> {t('您好，欢迎致电语流科技...', 'Hello, welcome to VoiceFlow...')}</div>
+                      <div><strong style={{ color: '#22c55e' }}>{t('[用户]', '[User]')}</strong> {t('你好，我想咨询一下', 'Hi, I\'d like to ask...')}</div>
+                      <div><strong style={{ color: '#4f46e5' }}>{t('[系统]', '[System]')}</strong> {t('好的，请问有什么可以帮您？', 'Sure, how can I help?')}</div>
+                      <div><strong style={{ color: '#22c55e' }}>{t('[用户]', '[User]')}</strong> {t('我想预约下周的服务', 'I want to book next week')}</div>
+                    </div>
+                  </div>
+                  {/* Node path chips */}
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100" style={{ fontSize: '13px', fontWeight: 600 }}>{t('节点路径', 'Node Path')}</div>
+                    <div className="px-4 py-3 flex items-center gap-1.5 flex-wrap">
+                      {[t('欢迎语', 'Greeting'), t('IVR菜单', 'IVR Menu'), t('语音识别', 'ASR'), t('预约处理', 'Booking'), t('结束', 'End')].map((node, i) => (
+                        <React.Fragment key={i}>
+                          {i > 0 && <ArrowRight size={12} color="#94a3b8" />}
+                          <span
+                            className="px-2.5 py-1 rounded"
+                            style={{
+                              fontSize: '11px',
+                              background: i === 4 ? '#f1f5f9' : i === 2 ? '#fef3c7' : '#dcfce7',
+                              color: i === 4 ? '#64748b' : i === 2 ? '#92400e' : '#166534',
+                            }}
+                          >
+                            {node}
+                          </span>
+                        </React.Fragment>
                       ))}
                     </div>
                   </div>
@@ -326,12 +420,15 @@ export default function SimulationTest() {
                     <div className="flex-1 min-w-0 pt-1">
                       <div className="flex items-center justify-between">
                         <span style={{ fontSize: '13px', fontWeight: 500, color: isDone ? '#111827' : isActive ? '#4f46e5' : '#9ca3af' }}>
-                          {t(node.label, node.labelEn)}
+                          {t(node.labelZh, node.labelEn)}
                         </span>
                         {node.time && (
                           <span style={{ fontSize: '11px', color: '#9ca3af' }}>{node.time}</span>
                         )}
                       </div>
+                      {(node as any).detailZh && (
+                        <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: 1 }}>{t((node as any).detailZh, (node as any).detailEn)}</p>
+                      )}
                       <div className="mt-0.5">
                         {isDone && (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs" style={{ background: '#f0fdf4', color: '#16a34a' }}>

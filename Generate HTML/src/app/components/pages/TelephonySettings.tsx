@@ -3,22 +3,49 @@ import { useLang } from '../../contexts/LanguageContext';
 import { Phone, Server, Globe, Search, Check, Copy, ChevronRight, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-const steps = {
+const steps: Record<TabType, { zh: string; en: string }[]> = {
   platform: [
-    { zh: '搜索区号', en: 'Search Area Code' },
+    { zh: '搜索号码', en: 'Search Number' },
     { zh: '选择号码', en: 'Select Number' },
-    { zh: '确认购买', en: 'Confirm Purchase' },
+    { zh: '绑定接待员', en: 'Bind Receptionist' },
+    { zh: '上线', en: 'Go Live' },
   ],
   byod: [
-    { zh: '填写SIP信息', en: 'Enter SIP Info' },
-    { zh: '验证连接', en: 'Verify Connection' },
+    { zh: '配置SIP', en: 'Config SIP' },
+    { zh: '验证连通', en: 'Verify Connection' },
     { zh: '绑定接待员', en: 'Bind Receptionist' },
+    { zh: '上线', en: 'Go Live' },
   ],
   webrtc: [
-    { zh: '复制嵌入代码', en: 'Copy Embed Code' },
-    { zh: '部署到网站', en: 'Deploy to Website' },
+    { zh: '嵌入代码', en: 'Embed Code' },
+    { zh: '自定义样式', en: 'Customize Style' },
     { zh: '测试通话', en: 'Test Call' },
+    { zh: '发布上线', en: 'Publish' },
   ],
+};
+
+const bannerInfo: Record<TabType, { zh: { title: string; desc: string }; en: { title: string; desc: string }; icon: string }> = {
+  platform: {
+    zh: { title: '平台托管的虚拟号码', desc: '直接从平台购买号码，无需自行配置线路。适合快速启动、中小规模使用场景。' },
+    en: { title: 'Platform Managed Virtual Numbers', desc: 'Purchase numbers directly from the platform, no line configuration needed. Ideal for quick start and SMB use cases.' },
+    icon: '📞',
+  },
+  byod: {
+    zh: { title: '自带号码 (BYON)', desc: '通过 SIP 转发接入您现有的号码，或申请号码携入（携号）。适合已有线路资源的企业。' },
+    en: { title: 'Bring Your Own Number (BYON)', desc: 'Connect your existing numbers via SIP forwarding or apply for number porting. For enterprises with existing line resources.' },
+    icon: '🔗',
+  },
+  webrtc: {
+    zh: { title: 'WebRTC 嵌入式通话', desc: '将通话组件嵌入您的网站或应用，访客可直接通过浏览器发起通话，无需安装任何插件。' },
+    en: { title: 'WebRTC Embedded Calls', desc: 'Embed the call widget on your website or app. Visitors can call directly from the browser, no plugins required.' },
+    icon: '🌐',
+  },
+};
+
+const targetAudience: Record<TabType, { zh: string; en: string }> = {
+  platform: { zh: '适合人群：中小型企业、快速上线需求、无自有线路', en: 'For: SMBs, quick launch, no existing lines' },
+  byod: { zh: '适合人群：已有 PBX/SIP 线路、企业级用户、需要保留原号码', en: 'For: Enterprises with PBX/SIP, need to retain original numbers' },
+  webrtc: { zh: '适合人群：网站客服、在线咨询、SaaS 嵌入通话、无需电话号码场景', en: 'For: Web support, online consulting, SaaS integration, no phone number needed' },
 };
 
 const availableNumbers = [
@@ -68,6 +95,9 @@ export default function TelephonySettings() {
   const [sipUri, setSipUri] = useState('');
   const [sipUser, setSipUser] = useState('');
   const [sipPass, setSipPass] = useState('');
+  const [sipPort, setSipPort] = useState('5060');
+  const [sipCodec, setSipCodec] = useState('PCMU');
+  const [sipTransport, setSipTransport] = useState('UDP');
   const [portingStep, setPortingStep] = useState(1);
 
   const tabs = [
@@ -114,6 +144,19 @@ export default function TelephonySettings() {
       </div>
 
       <div className="p-5 max-w-4xl">
+        {/* Info Banner */}
+        <div className="flex items-start gap-4 p-5 rounded-lg border mb-6" style={{ background: '#eef2ff', borderColor: '#c7d2fe' }}>
+          <span style={{ fontSize: '22px' }}>{bannerInfo[tab].icon}</span>
+          <div>
+            <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#111827', marginBottom: 4 }}>
+              {t(bannerInfo[tab].zh.title, bannerInfo[tab].en.title)}
+            </h4>
+            <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>
+              {t(bannerInfo[tab].zh.desc, bannerInfo[tab].en.desc)}
+            </p>
+          </div>
+        </div>
+
         {/* Stepper */}
         <div className="flex items-center gap-2 mb-6">
           {steps[tab].map((step, i) => (
@@ -209,6 +252,11 @@ export default function TelephonySettings() {
 
             {/* Cost table */}
             <CostTable data={costData.platform} t={t} />
+
+            {/* Target audience */}
+            <p style={{ fontSize: '13px', color: '#64748b', padding: '8px 0' }}>
+              {t(targetAudience.platform.zh, targetAudience.platform.en)}
+            </p>
           </div>
         )}
 
@@ -256,7 +304,7 @@ export default function TelephonySettings() {
                     <label className="block mb-1.5" style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>
                       {t('SIP端口', 'SIP Port')}
                     </label>
-                    <input type="number" defaultValue={5060}
+                    <input type="text" value={sipPort} onChange={e => setSipPort(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500"
                       style={{ fontSize: '13px' }}
                     />
@@ -265,10 +313,24 @@ export default function TelephonySettings() {
                     <label className="block mb-1.5" style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>
                       {t('传输协议', 'Transport')}
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500" style={{ fontSize: '13px' }}>
+                    <select value={sipTransport} onChange={e => setSipTransport(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500 bg-white"
+                      style={{ fontSize: '13px' }}>
                       <option>UDP</option><option>TCP</option><option>TLS</option>
                     </select>
                   </div>
+                </div>
+                <div>
+                  <label className="block mb-1.5" style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>
+                    {t('编码格式', 'Codec')}
+                  </label>
+                  <select value={sipCodec} onChange={e => setSipCodec(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500 bg-white"
+                    style={{ fontSize: '13px' }}>
+                    <option value="PCMU">PCMU (G.711u)</option>
+                    <option value="PCMA">PCMA (G.711a)</option>
+                    <option value="OPUS">OPUS</option>
+                  </select>
                 </div>
                 <button
                   className="px-4 py-2 rounded-md text-white text-sm font-medium"
@@ -318,6 +380,11 @@ export default function TelephonySettings() {
             </div>
 
             <CostTable data={costData.byod} t={t} />
+
+            {/* Target audience */}
+            <p style={{ fontSize: '13px', color: '#64748b', padding: '8px 0' }}>
+              {t(targetAudience.byod.zh, targetAudience.byod.en)}
+            </p>
           </div>
         )}
 
@@ -369,6 +436,11 @@ export default function TelephonySettings() {
             </div>
 
             <CostTable data={costData.webrtc} t={t} />
+
+            {/* Target audience */}
+            <p style={{ fontSize: '13px', color: '#64748b', padding: '8px 0' }}>
+              {t(targetAudience.webrtc.zh, targetAudience.webrtc.en)}
+            </p>
           </div>
         )}
       </div>
@@ -380,7 +452,7 @@ export default function TelephonySettings() {
             <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827', marginBottom: 16 }}>{t('确认购买', 'Confirm Purchase')}</h3>
             <div className="p-3 rounded-lg border border-gray-100 mb-4" style={{ background: '#f8f9fa' }}>
               <p style={{ fontSize: '14px', color: '#374151' }}>{selectedNumber}</p>
-              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: 4 }}>$1.15/mo + 使用费</p>
+              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: 4 }}>$1.15/mo + {t('使用费', 'usage fee')}</p>
             </div>
             <div className="flex gap-3">
               <button onClick={() => setShowPurchaseModal(false)} className="flex-1 py-2 rounded-md border border-gray-200 text-sm" style={{ color: '#374151' }}>

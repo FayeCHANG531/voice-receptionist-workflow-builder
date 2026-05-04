@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLang } from '../../contexts/LanguageContext';
-import { Plus, Search, ChevronDown, AlertTriangle, X, Check } from 'lucide-react';
+import { Plus, Search, ChevronDown, AlertTriangle, X, Check, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface NumberRecord {
@@ -8,16 +8,17 @@ interface NumberRecord {
   number: string;
   type: 'platform' | 'byod' | 'webrtc';
   status: 'active' | 'unbound' | 'porting';
-  receptionist: string;
+  receptionistZh: string;
+  receptionistEn: string;
   purchaseDate: string;
 }
 
 const initialNumbers: NumberRecord[] = [
-  { id: '1', number: '+1 (415) 555-0100', type: 'platform', status: 'active', receptionist: '客服1号', purchaseDate: '2026-03-15' },
-  { id: '2', number: '+1 (415) 555-0101', type: 'platform', status: 'unbound', receptionist: '—', purchaseDate: '2026-03-20' },
-  { id: '3', number: '+86 21 5500-1001', type: 'platform', status: 'active', receptionist: '节假日专线', purchaseDate: '2026-04-01' },
-  { id: '4', number: 'sip:office@pbx.company.com', type: 'byod', status: 'active', receptionist: '客服2号', purchaseDate: '2026-04-10' },
-  { id: '5', number: '+1 (650) 555-0300', type: 'platform', status: 'porting', receptionist: '—', purchaseDate: '2026-05-01' },
+  { id: '1', number: '+1 (415) 555-0100', type: 'platform', status: 'active', receptionistZh: '客服1号', receptionistEn: 'Receptionist 1', purchaseDate: '2026-03-15' },
+  { id: '2', number: '+1 (415) 555-0101', type: 'platform', status: 'unbound', receptionistZh: '—', receptionistEn: '—', purchaseDate: '2026-03-20' },
+  { id: '3', number: '+86 21 5500-1001', type: 'platform', status: 'active', receptionistZh: '节假日专线', receptionistEn: 'Holiday Line', purchaseDate: '2026-04-01' },
+  { id: '4', number: 'sip:office@pbx.company.com', type: 'byod', status: 'active', receptionistZh: '客服2号', receptionistEn: 'Receptionist 2', purchaseDate: '2026-04-10' },
+  { id: '5', number: '+1 (650) 555-0300', type: 'platform', status: 'porting', receptionistZh: '—', receptionistEn: '—', purchaseDate: '2026-05-01' },
 ];
 
 const typeLabels = {
@@ -33,8 +34,14 @@ const statusLabels = {
 };
 
 const availableToBuy = [
-  '+1 (408) 555-0401', '+1 (408) 555-0402', '+1 (510) 555-0501',
-  '+1 (650) 555-0601', '+86 10 8800-3003', '+86 20 8800-4004',
+  { num: '+1 (408) 555-0401', loc: (t: any) => t('圣何塞', 'San Jose'), price: (t: any) => t('¥35/月', '$5/mo') },
+  { num: '+1 (408) 555-0402', loc: (t: any) => t('圣何塞', 'San Jose'), price: (t: any) => t('¥35/月', '$5/mo') },
+  { num: '+1 (510) 555-0501', loc: (t: any) => t('奥克兰', 'Oakland'), price: (t: any) => t('¥35/月', '$5/mo') },
+  { num: '+1 (650) 555-0601', loc: (t: any) => t('帕洛阿尔托', 'Palo Alto'), price: (t: any) => t('¥35/月', '$5/mo') },
+  { num: '+86 10 8800-3003', loc: (t: any) => t('北京', 'Beijing'), price: (t: any) => t('¥35/月', '$5/mo') },
+  { num: '+86 20 8800-4004', loc: (t: any) => t('广州', 'Guangzhou'), price: (t: any) => t('¥35/月', '$5/mo') },
+  { num: '+86 21 8800-5005', loc: (t: any) => t('上海', 'Shanghai'), price: (t: any) => t('¥40/月', '$6/mo') },
+  { num: '+86 755 8800-6006', loc: (t: any) => t('深圳', 'Shenzhen'), price: (t: any) => t('¥35/月', '$5/mo') },
 ];
 
 export default function NumberManagement() {
@@ -46,6 +53,7 @@ export default function NumberManagement() {
   const [showPurchase, setShowPurchase] = useState(false);
   const [releaseTarget, setReleaseTarget] = useState<NumberRecord | null>(null);
   const [selectedBuy, setSelectedBuy] = useState<string | null>(null);
+  const [purchaseArea, setPurchaseArea] = useState('');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 5;
 
@@ -61,7 +69,7 @@ export default function NumberManagement() {
 
   const handleRelease = () => {
     if (!releaseTarget) return;
-    if (releaseTarget.status === 'active' && releaseTarget.receptionist !== '—') {
+    if (releaseTarget.status === 'active' && releaseTarget.receptionistZh !== '—') {
       toast.error(t('此号码正在使用，请先解绑', 'Number in use, unbind first'));
       setReleaseTarget(null);
       return;
@@ -74,7 +82,7 @@ export default function NumberManagement() {
   const handlePurchase = () => {
     if (!selectedBuy) return;
     const newNum: NumberRecord = {
-      id: `${Date.now()}`, number: selectedBuy, type: 'platform', status: 'unbound', receptionist: '—',
+      id: `${Date.now()}`, number: selectedBuy, type: 'platform', status: 'unbound', receptionistZh: '—', receptionistEn: '—',
       purchaseDate: new Date().toISOString().split('T')[0],
     };
     setNumbers(ns => [newNum, ...ns]);
@@ -170,7 +178,7 @@ export default function NumberManagement() {
                           </span>
                         </td>
                         <td className="px-4 py-3" style={{ fontSize: '13px', color: '#374151' }}>
-                          {num.receptionist}
+                          {t(num.receptionistZh, num.receptionistEn)}
                         </td>
                         <td className="px-4 py-3" style={{ fontSize: '13px', color: '#6b7280' }}>
                           {num.purchaseDate}
@@ -232,30 +240,39 @@ export default function NumberManagement() {
               <div className="flex gap-2 mb-4">
                 <div className="relative flex-1">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" color="#9ca3af" />
-                  <input type="text" placeholder={t('搜索区号...', 'Search area code...')}
+                  <input type="text"
+                    value={purchaseArea}
+                    onChange={e => setPurchaseArea(e.target.value)}
+                    placeholder={t('输入区号过滤, 如 010、021', 'Filter by area code, e.g. 010')}
                     className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500"
                     style={{ fontSize: '13px' }}
                   />
                 </div>
               </div>
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {availableToBuy.map(n => (
+                {availableToBuy.filter(n => !purchaseArea || n.num.includes(purchaseArea)).map(n => {
+                  const isSelected = selectedBuy === n.num;
+                  return (
                   <button
-                    key={n}
-                    onClick={() => setSelectedBuy(n === selectedBuy ? null : n)}
+                    key={n.num}
+                    onClick={() => setSelectedBuy(isSelected ? null : n.num)}
                     className="flex items-center justify-between w-full px-3 py-2.5 rounded-md border text-left transition"
                     style={{
-                      borderColor: selectedBuy === n ? '#4f46e5' : '#e5e7eb',
-                      background: selectedBuy === n ? '#eef2ff' : '#fff',
+                      borderColor: isSelected ? '#4f46e5' : '#e5e7eb',
+                      background: isSelected ? '#eef2ff' : '#fff',
                     }}
                   >
-                    <span style={{ fontSize: '13px', fontFamily: 'monospace', color: '#1f2937' }}>{n}</span>
+                    <div>
+                      <span style={{ fontSize: '13px', fontFamily: 'monospace', color: '#1f2937' }}>{n.num}</span>
+                      <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: 2 }}>{n.loc(t)}</p>
+                    </div>
                     <div className="flex items-center gap-2">
-                      <span style={{ fontSize: '12px', color: '#6b7280' }}>$1.15/mo</span>
-                      {selectedBuy === n && <Check size={14} color="#4f46e5" />}
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#4f46e5' }}>{n.price(t)}</span>
+                      {isSelected && <Check size={14} color="#4f46e5" />}
                     </div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
             <div className="flex gap-3 px-5 pb-5">

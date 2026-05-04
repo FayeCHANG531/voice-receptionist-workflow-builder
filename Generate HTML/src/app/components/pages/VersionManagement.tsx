@@ -8,35 +8,39 @@ interface Version {
   number: number;
   status: 'draft' | 'published';
   time: string;
-  description: string;
+  descriptionZh: string;
+  descriptionEn: string;
   author: string;
-  changes: { type: 'added' | 'removed' | 'modified'; text: string }[];
+  nodes: number;
+  changes: VersionChange[];
 }
+
+interface VersionChange { type: 'added' | 'removed' | 'modified'; textZh: string; textEn: string; }
 
 const versions: Version[] = [
   {
-    id: 'v3', number: 3, status: 'draft', time: '2026-05-03 10:30', description: '新增会员验证分支逻辑', author: '张三',
+    id: 'v3', number: 3, status: 'draft', time: '2026-05-03 10:30', descriptionZh: '新增会员验证分支逻辑', descriptionEn: 'Added membership verification branch', author: 'Zhang San', nodes: 12,
     changes: [
-      { type: 'added', text: '新增节点：会员等级判断 (Branch)' },
-      { type: 'added', text: '新增连线：身份验证 → 会员等级判断' },
-      { type: 'modified', text: '修改：问候语文本 — 更新为新版欢迎词' },
+      { type: 'added', textZh: '新增节点：会员等级判断 (Branch)', textEn: 'Added node: Membership Tier Check (Branch)' },
+      { type: 'added', textZh: '新增连线：身份验证 → 会员等级判断', textEn: 'Added connection: ID Verify → Membership Tier Check' },
+      { type: 'modified', textZh: '修改：问候语文本 — 更新为新版欢迎词', textEn: 'Modified: Greeting text updated to new version' },
     ]
   },
   {
-    id: 'v2', number: 2, status: 'published', time: '2026-04-28 14:20', description: '优化问候语，增加超时重试', author: '李四',
+    id: 'v2', number: 2, status: 'published', time: '2026-04-28 14:20', descriptionZh: '优化问候语，增加超时重试', descriptionEn: 'Optimized greeting, added timeout retry', author: 'Li Si', nodes: 9,
     changes: [
-      { type: 'modified', text: '修改：问候语文本 — 语气更友好' },
-      { type: 'modified', text: '修改：身份验证节点 — 最大等待时间 8s→10s，重试次数 1→2' },
-      { type: 'removed', text: '删除节点：旧版等待节点 (Wait)' },
+      { type: 'modified', textZh: '修改：问候语文本 — 语气更友好', textEn: 'Modified: Greeting text - friendlier tone' },
+      { type: 'modified', textZh: '修改：身份验证节点 — 最大等待时间 8s→10s，重试次数 1→2', textEn: 'Modified: ID verify - max wait 8s→10s, retries 1→2' },
+      { type: 'removed', textZh: '删除节点：旧版等待节点 (Wait)', textEn: 'Removed node: Legacy Wait node' },
     ]
   },
   {
-    id: 'v1', number: 1, status: 'published', time: '2026-04-15 09:00', description: '初始发布版本', author: '张三',
+    id: 'v1', number: 1, status: 'published', time: '2026-04-15 09:00', descriptionZh: '初始发布版本', descriptionEn: 'Initial release version', author: 'Zhang San', nodes: 5,
     changes: [
-      { type: 'added', text: '初始创建：问候语节点' },
-      { type: 'added', text: '初始创建：身份验证节点' },
-      { type: 'added', text: '初始创建：预约服务节点' },
-      { type: 'added', text: '初始创建：结束节点' },
+      { type: 'added', textZh: '初始创建：问候语节点', textEn: 'Created: Greeting node' },
+      { type: 'added', textZh: '初始创建：身份验证节点', textEn: 'Created: ID Verification node' },
+      { type: 'added', textZh: '初始创建：预约服务节点', textEn: 'Created: Booking Service node' },
+      { type: 'added', textZh: '初始创建：结束节点', textEn: 'Created: End Call node' },
     ]
   },
 ];
@@ -63,12 +67,24 @@ export default function VersionManagement() {
     toast.success(t('发布成功', 'Published successfully'));
   };
 
+  const handleCreateVersion = () => {
+    const nextNum = versions.length > 0 ? Math.max(...versions.map(v => v.number)) + 1 : 1;
+    toast.success(t(`新版本 v${nextNum} 已创建`, `Version v${nextNum} created`));
+  };
+
   return (
     <div className="flex h-full overflow-hidden">
       {/* Left: Version list */}
       <aside className="flex flex-col bg-white border-r border-gray-200 overflow-hidden flex-shrink-0" style={{ width: 320 }}>
-        <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
+        <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0 flex items-center justify-between">
           <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>{t('版本历史', 'Version History')}</span>
+          <button
+            onClick={handleCreateVersion}
+            className="px-3 py-1.5 rounded-md text-white text-xs font-medium"
+            style={{ background: '#4f46e5' }}
+          >
+            + {t('新版本', 'New Version')}
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto">
           {versions.map((ver, i) => {
@@ -97,7 +113,7 @@ export default function VersionManagement() {
                     </span>
                   </div>
                 </div>
-                <p className="mt-1" style={{ fontSize: '13px', color: '#374151' }}>{ver.description}</p>
+                <p className="mt-1" style={{ fontSize: '13px', color: '#374151' }}>{t(ver.descriptionZh, ver.descriptionEn)}</p>
                 <div className="flex items-center gap-3 mt-2" style={{ fontSize: '11px', color: '#9ca3af' }}>
                   <span className="flex items-center gap-1"><Clock size={11} />{ver.time}</span>
                   <span className="flex items-center gap-1"><User size={11} />{ver.author}</span>
@@ -156,12 +172,33 @@ export default function VersionManagement() {
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-1">
                   <span style={{ fontSize: '13px', color: '#6b7280' }}>{t('版本描述', 'Description:')}</span>
-                  <span style={{ fontSize: '13px', color: '#111827' }}>{selected.description}</span>
+                  <span style={{ fontSize: '13px', color: '#111827' }}>{t(selected.descriptionZh, selected.descriptionEn)}</span>
                 </div>
                 <div className="flex items-center gap-4" style={{ fontSize: '12px', color: '#9ca3af' }}>
                   <span className="flex items-center gap-1"><Clock size={12} />{selected.time}</span>
                   <span className="flex items-center gap-1"><User size={12} />{selected.author}</span>
                 </div>
+              </div>
+
+              {/* 4-column info cards */}
+              <div className="grid grid-cols-4 gap-3 mb-4">
+                {[
+                  { label: t('创建时间', 'Created'), value: selected.time },
+                  { label: t('作者', 'Author'), value: selected.author },
+                  { label: t('状态', 'Status'), value: selected.status === 'published' ? t('已发布', 'Published') : t('草稿', 'Draft'), color: selected.status === 'published' ? '#16a34a' : '#d97706', bg: selected.status === 'published' ? '#dcfce7' : '#fef9c3' },
+                  { label: t('节点数', 'Nodes'), value: String(selected.nodes) },
+                ].map(card => (
+                  <div key={card.label} className="rounded-lg p-3" style={{ background: '#f8fafc' }}>
+                    <p style={{ fontSize: '11px', color: '#9ca3af', marginBottom: 4 }}>{card.label}</p>
+                    {card.color ? (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: card.bg, color: card.color }}>
+                        {card.value}
+                      </span>
+                    ) : (
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>{card.value}</p>
+                    )}
+                  </div>
+                ))}
               </div>
 
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -196,7 +233,7 @@ export default function VersionManagement() {
                           style={{ background: style.border, color: style.text }}>
                           {style.prefix}
                         </span>
-                        <span style={{ fontSize: '13px', color: style.text }}>{change.text}</span>
+                        <span style={{ fontSize: '13px', color: style.text }}>{t(change.textZh, change.textEn)}</span>
                       </div>
                     );
                   })}
